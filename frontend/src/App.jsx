@@ -117,7 +117,7 @@ function App() {
       {/* Header */}
       <header className="header">
         <div className="header-content">
-          <h1 className="title">🏪 Salsamentaria</h1>
+          <h1 className="title">Salsamentaría Burbano</h1>
           <p className="subtitle">Sistema de gestión de productos</p>
         </div>
       </header>
@@ -127,14 +127,15 @@ function App() {
         {/* Form Section */}
         <section className="form-section">
           <div className="form-header">
-            <h2>Agregar Nuevo Producto</h2>
+            <h2>Nuevo Producto</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="product-form">
             <div className="form-group">
+              <label className="form-label">Nombre</label>
               <input
                 type="text"
-                placeholder="Nombre del producto"
+                placeholder="Ingresa el nombre del producto"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="form-input"
@@ -143,9 +144,10 @@ function App() {
             </div>
 
             <div className="form-group">
+              <label className="form-label">Precio (COP)</label>
               <input
                 type="number"
-                placeholder="Precio (COP)"
+                placeholder="0.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 className="form-input"
@@ -157,9 +159,9 @@ function App() {
 
             <button type="submit" disabled={loading} className="submit-btn">
               {loading ? (
-                <span className="loading-spinner">⏳ Agregando...</span>
+                <span className="loading-spinner">Guardando...</span>
               ) : (
-                <span>➕ Agregar Producto</span>
+                <span>Agregar</span>
               )}
             </button>
           </form>
@@ -168,16 +170,13 @@ function App() {
         {/* Search and Controls */}
         <section className="controls-section">
           <div className="search-bar">
-            <div className="search-input-wrapper">
-              <span className="search-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="Buscar producto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="search-input"
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="search-input"
+            />
           </div>
 
           <div className="sort-controls">
@@ -199,7 +198,7 @@ function App() {
         {/* Error Message */}
         {error && (
           <div className="error-message">
-            <span className="error-icon">❌</span>
+            <span className="error-icon">⚠</span>
             {error}
           </div>
         )}
@@ -207,9 +206,9 @@ function App() {
         {/* Products List */}
         <section className="products-section">
           <div className="section-header">
-            <h2>Lista de Productos</h2>
+            <h2>Productos</h2>
             <span className="product-count">
-              {products.length} producto{products.length !== 1 ? 's' : ''}
+              {products.length} {products.length === 1 ? 'producto' : 'productos'}
             </span>
           </div>
 
@@ -225,7 +224,7 @@ function App() {
               <p>
                 {search
                   ? `No se encontraron productos que coincidan con "${search}"`
-                  : 'Agrega tu primer producto usando el formulario de arriba'
+                  : 'Agrega tu primer producto usando el formulario anterior'
                 }
               </p>
             </div>
@@ -239,7 +238,7 @@ function App() {
                       ${product.price.toLocaleString('es-CO', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
-                      })} COP
+                      })}
                     </p>
                   </div>
                   <button
@@ -247,7 +246,7 @@ function App() {
                     className="delete-btn"
                     title="Eliminar producto"
                   >
-                    🗑️
+                    ✕
                   </button>
                 </div>
               ))}
