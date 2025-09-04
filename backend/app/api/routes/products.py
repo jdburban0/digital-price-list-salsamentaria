@@ -64,7 +64,8 @@ def create_product(payload: ProductCreate) -> Product:
 def get_product(product_id: int) -> Product:
     product = _db.get(product_id)
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(
+            status_code=404, detail="No se encontró el producto")
     return product
 
 
@@ -72,12 +73,13 @@ def get_product(product_id: int) -> Product:
 def update_product(product_id: int, payload: ProductUpdate) -> Product:
     product = _db.get(product_id)
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(
+            status_code=404, detail="No se encontró el producto")
 
     # Validar unicidad del nombre si se proporciona
     if payload.name and any(p.name.lower() == payload.name.lower() and p.id != product_id for p in _db.values()):
         raise HTTPException(
-            status_code=409, detail="Product name already exists")
+            status_code=409, detail="Ya agregaste este producto")
 
     update_data = payload.dict(exclude_unset=True)
     updated = product.copy(update=update_data)
@@ -88,6 +90,6 @@ def update_product(product_id: int, payload: ProductUpdate) -> Product:
 @router.delete("/{product_id}", status_code=204)
 def delete_product(product_id: int) -> None:
     if product_id not in _db:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
     del _db[product_id]
     return None
