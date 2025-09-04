@@ -53,7 +53,7 @@ def create_product(payload: ProductCreate) -> Product:
     # Validar unicidad del nombre
     if any(p.name.lower() == payload.name.lower() for p in _db.values()):
         raise HTTPException(
-            status_code=409, detail="Product name already exists")
+            status_code=409, detail="Ya agregaste este producto")
 
     product = Product(id=_get_next_id(), **payload.dict())
     _db[product.id] = product

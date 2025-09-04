@@ -238,7 +238,7 @@ function App() {
                       ${product.price.toLocaleString('es-CO', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
-                      })}
+                      })} COP
                     </p>
                   </div>
                   <button
