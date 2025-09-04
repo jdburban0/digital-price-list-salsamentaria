@@ -8,12 +8,16 @@ function App() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   // Función para obtener productos
-  const fetchProducts = async (query = '') => {
+  const fetchProducts = async (query = '', sort = 'name', order = 'asc') => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/products?q=${query}`);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/products?q=${query}&sort=${sort}&order=${order}`
+      );
       if (!response.ok) {
         throw new Error('Error al obtener productos');
       }
@@ -22,6 +26,7 @@ function App() {
       setError(null);
     } catch (err) {
       setError(err.message);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -29,92 +34,227 @@ function App() {
 
   // Cargar productos al montar el componente
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(search, sortBy, sortOrder);
   }, []);
 
   // Manejar búsqueda con debounce
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchProducts(search);
+      fetchProducts(search, sortBy, sortOrder);
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [search]);
+  }, [search, sortBy, sortOrder]);
 
   // Crear producto
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, price: parseFloat(price) }),
+        body: JSON.stringify({ name: name.trim(), price: parseFloat(price) }),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Error al crear producto');
       }
-      const newProduct = await response.json(); // Obtener el producto creado
-      setProducts([...products, newProduct]); // Agregar el nuevo producto a la lista
+
+      const newProduct = await response.json();
+
+      // Actualizar la lista localmente
+      setProducts(prevProducts => [...prevProducts, newProduct]);
+
+      // Limpiar el formulario
       setName('');
       setPrice('');
+
+      // Mostrar mensaje de éxito
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
+
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-    console.log("Producto creado:", newProduct);
-    setProducts([...products, newProduct]);
+  };
+
+  // Manejar cambio de ordenamiento
+  const handleSortChange = (newSort) => {
+    if (newSort === sortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSort);
+      setSortOrder('asc');
+    }
+  };
+
+  // Función para eliminar producto
+  const deleteProduct = async (productId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setProducts(products.filter(p => p.id !== productId));
+      }
+    } catch (err) {
+      setError('Error al eliminar producto');
+    }
   };
 
   return (
-    <div className="container">
-      <h1>Lista de Precios - Salsamentaria</h1>
+    <div className="app-container">
+      {/* Header */}
+      <header className="header">
+        <div className="header-content">
+          <h1 className="title">🏪 Salsamentaria</h1>
+          <p className="subtitle">Sistema de gestión de productos</p>
+        </div>
+      </header>
 
-      {/* Formulario de creación */}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Nombre del producto"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Precio"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          min="0"
-          step="0.01"
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? 'Creando...' : 'Agregar Producto'}
-        </button>
-      </form>
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Form Section */}
+        <section className="form-section">
+          <div className="form-header">
+            <h2>Agregar Nuevo Producto</h2>
+          </div>
 
-      {/* Búsqueda */}
-      <input
-        type="text"
-        placeholder="Buscar producto..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+          <form onSubmit={handleSubmit} className="product-form">
+            <div className="form-group">
+              <input
+                type="text"
+                placeholder="Nombre del producto"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
 
-      {/* Estados de carga y error */}
-      {loading && <p>Cargando...</p>}
-      {error && <p className="error">{error}</p>}
+            <div className="form-group">
+              <input
+                type="number"
+                placeholder="Precio (COP)"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="form-input"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
 
-      {/* Lista de productos */}
-      <ul>
-        {products.map((product) => (
-          <li key={product.id}>
-            {product.name} - ${product.price.toFixed(2)}
-          </li>
-        ))}
-      </ul>
+            <button type="submit" disabled={loading} className="submit-btn">
+              {loading ? (
+                <span className="loading-spinner">⏳ Agregando...</span>
+              ) : (
+                <span>➕ Agregar Producto</span>
+              )}
+            </button>
+          </form>
+        </section>
+
+        {/* Search and Controls */}
+        <section className="controls-section">
+          <div className="search-bar">
+            <div className="search-input-wrapper">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar producto..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          </div>
+
+          <div className="sort-controls">
+            <button
+              onClick={() => handleSortChange('name')}
+              className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+            >
+              Nombre {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </button>
+            <button
+              onClick={() => handleSortChange('price')}
+              className={`sort-btn ${sortBy === 'price' ? 'active' : ''}`}
+            >
+              Precio {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </button>
+          </div>
+        </section>
+
+        {/* Error Message */}
+        {error && (
+          <div className="error-message">
+            <span className="error-icon">❌</span>
+            {error}
+          </div>
+        )}
+
+        {/* Products List */}
+        <section className="products-section">
+          <div className="section-header">
+            <h2>Lista de Productos</h2>
+            <span className="product-count">
+              {products.length} producto{products.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {loading && !products.length ? (
+            <div className="loading-state">
+              <div className="loading-spinner-large">⏳</div>
+              <p>Cargando productos...</p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📦</div>
+              <h3>No hay productos</h3>
+              <p>
+                {search
+                  ? `No se encontraron productos que coincidan con "${search}"`
+                  : 'Agrega tu primer producto usando el formulario de arriba'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="products-grid">
+              {products.map((product) => (
+                <div key={product.id} className="product-card">
+                  <div className="product-info">
+                    <h3 className="product-name">{product.name}</h3>
+                    <p className="product-price">
+                      ${product.price.toLocaleString('es-CO', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })} COP
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => deleteProduct(product.id)}
+                    className="delete-btn"
+                    title="Eliminar producto"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }
