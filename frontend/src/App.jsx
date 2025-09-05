@@ -7,6 +7,7 @@ function App() {
   const [error, setError] = useState(null);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [categoria, setCategoria] = useState(''); // Añadido
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -56,7 +57,11 @@ function App() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), price: parseFloat(price) }),
+        body: JSON.stringify({
+          name: name.trim(),
+          price: parseFloat(price),
+          categoria: categoria.trim() // Añadido
+        }),
       });
 
       if (!response.ok) {
@@ -72,6 +77,7 @@ function App() {
       // Limpiar el formulario
       setName('');
       setPrice('');
+      setCategoria(''); // Añadido
 
       // Mostrar mensaje de éxito
       setTimeout(() => {
@@ -157,6 +163,18 @@ function App() {
               />
             </div>
 
+            <div className="form-group">
+              <label className="form-label">Categoría</label>
+              <input
+                type="text"
+                placeholder="Ej. Lácteos, Embutidos"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+
             <button type="submit" disabled={loading} className="submit-btn">
               {loading ? (
                 <span className="loading-spinner">Guardando...</span>
@@ -224,8 +242,7 @@ function App() {
               <p>
                 {search
                   ? `No se encontraron productos que coincidan con "${search}"`
-                  : 'Agrega tu primer producto usando el formulario anterior'
-                }
+                  : 'Agrega tu primer producto usando el formulario anterior'}
               </p>
             </div>
           ) : (
@@ -240,6 +257,7 @@ function App() {
                         maximumFractionDigits: 2
                       })} COP
                     </p>
+                    <p className="product-categoria">Categoría: {product.categoria}</p> {/* Añadido */}
                   </div>
                   <button
                     onClick={() => deleteProduct(product.id)}
