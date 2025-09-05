@@ -1,7 +1,7 @@
 # Elevator Pitch
 
 En una salsamentaria tradicional, el propietario debe imprimir listas de precios constantemente para actualizarlos, lo que genera desperdicio de papel, tiempo y errores manuales. Esta solución es una aplicación web simple (accesible desde PC o móvil) que permite al propietario gestionar y actualizar precios de productos en tiempo real, con una vista pública para clientes. Dirigida a dueños de pequeños negocios como salsamentarias, reduce costos y mejora la eficiencia operativa.
-Usuarios/Segmentos y Principales Casos de Uso
+
 
 # Usuario Principal (Propietario/Administrador): 
 Dueño de la salsamentaria (ej. la tía del usuario). Casos de uso: Crear/actualizar/eliminar productos con precios, buscar productos, ordenar lista por nombre o precio.
