@@ -1,273 +1,353 @@
-import { useState, useEffect } from 'react';
-import './App.css';
+import { useState, useEffect } from "react";
+import "./App.css";
+import LoginForm from "./components/LoginForm";
+import { getToken, removeToken, isAuthenticated } from "./utils/auth";
 
 function App() {
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  // --- Estados principales ---
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [categoria, setCategoria] = useState(''); // Añadido
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [success, setSuccess] = useState(null);
+  const [search, setSearch] = useState("");
+  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const [statusMessage, setStatusMessage] = useState("");
 
-  // Función para obtener productos
-  const fetchProducts = async (query = '', sort = 'name', order = 'asc') => {
-    setLoading(true);
+  // --- Paginación y orden ---
+  const [page, setPage] = useState(0);
+  const [limit] = useState(6);
+  const [total, setTotal] = useState(0);
+  const [sort, setSort] = useState("name");
+  const [order, setOrder] = useState("asc");
+
+  // --- Formulario ---
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+
+  // --- Obtener categorías y proveedores ---
+  const fetchCategoriesAndSuppliers = async () => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/products?q=${query}&sort=${sort}&order=${order}`
-      );
-      if (!response.ok) {
-        throw new Error('Error al obtener productos');
-      }
-      const data = await response.json();
-      setProducts(data);
-      setError(null);
+      const [categoriesRes, suppliersRes] = await Promise.all([
+        fetch(`${API_URL}/categories`),
+        fetch(`${API_URL}/suppliers`),
+      ]);
+      if (!categoriesRes.ok || !suppliersRes.ok)
+        throw new Error("Error al obtener datos iniciales");
+
+      setCategories(await categoriesRes.json());
+      setSuppliers(await suppliersRes.json());
     } catch (err) {
+      console.error(err);
+      setError("No se pudieron cargar categorías o proveedores");
+    }
+  };
+
+  // --- Obtener productos (con búsqueda, paginación y orden) ---
+  // --- Obtener productos (con búsqueda, paginación y orden) ---
+  const fetchData = async (query = "", offset = 0) => {
+    try {
+      setLoading(true);
+      const url = new URL(`${API_URL}/products`);
+      url.searchParams.append("q", query);
+      url.searchParams.append("offset", offset);
+      url.searchParams.append("limit", limit);
+      url.searchParams.append("sort", sort);
+      url.searchParams.append("order", order);
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Error al obtener productos");
+
+      const data = await res.json();
+
+      //leemos el total directamente desde la cabecera
+      const totalCount = res.headers.get("x-total-count"); // minúscula por compatibilidad
+      console.log("Total recibido del backend:", totalCount);
+
+      setTotal(parseInt(totalCount || "0"));
+      setProducts(data);
+    } catch (err) {
+      console.error(err);
       setError(err.message);
-      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Cargar productos al montar el componente
+
+  // --- Cargar datos al iniciar ---
   useEffect(() => {
-    fetchProducts(search, sortBy, sortOrder);
+    fetchCategoriesAndSuppliers();
+    fetchData();
   }, []);
 
-  // Manejar búsqueda con debounce
+  // --- Buscar en tiempo real ---
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      fetchProducts(search, sortBy, sortOrder);
-    }, 300);
+    const delay = setTimeout(() => fetchData(search, page * limit), 400);
+    return () => clearTimeout(delay);
+  }, [search, sort, order, page]);
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [search, sortBy, sortOrder]);
-
-  // Crear producto
+  // --- Crear producto ---
+  // --- Crear producto ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!name.trim() || !price.trim() || !categoryId || !supplierId) {
+      setError("Por favor completa todos los campos");
+      return;
+    }
     setError(null);
+    setSuccess(null);
+    setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const token = getToken();
+      const res = await fetch(`${API_URL}/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           name: name.trim(),
           price: parseFloat(price),
-          categoria: categoria.trim() // Añadido
+          categoria_id: parseInt(categoryId),
+          supplier_id: parseInt(supplierId),
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al crear producto');
-      }
+      const errData = await res.clone().json().catch(() => null);
+      if (!res.ok) throw new Error(errData?.detail || "Error al crear producto");
 
-      const newProduct = await response.json();
+      setSuccess("Producto agregado correctamente");
+      setName("");
+      setPrice("");
+      setCategoryId("");
+      setSupplierId("");
 
-      // Actualizar la lista localmente
-      setProducts(prevProducts => [...prevProducts, newProduct]);
-
-      // Limpiar el formulario
-      setName('');
-      setPrice('');
-      setCategoria(''); // Añadido
-
-      // Mostrar mensaje de éxito
-      setTimeout(() => {
-        setError(null);
-      }, 3000);
-
+      // Recargar la lista completa y el total
+      await fetchData(search, page * limit);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setTimeout(() => setSuccess(null), 2000);
     }
   };
 
-  // Manejar cambio de ordenamiento
-  const handleSortChange = (newSort) => {
-    if (newSort === sortBy) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(newSort);
-      setSortOrder('asc');
-    }
-  };
 
-  // Función para eliminar producto
-  const deleteProduct = async (productId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) return;
-
+  // --- Eliminar producto ---
+  const deleteProduct = async (id) => {
+    if (!confirm("¿Eliminar este producto?")) return;
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${productId}`, {
-        method: 'DELETE',
+      const token = getToken();
+      const res = await fetch(`${API_URL}/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error("Error al eliminar producto");
 
-      if (response.ok) {
-        setProducts(products.filter(p => p.id !== productId));
-      }
+      setSuccess("🗑️ Producto eliminado");
+      // Recargar lista y total actualizados
+      await fetchData(search, page * limit);
     } catch (err) {
-      setError('Error al eliminar producto');
+      setError(err.message);
+    } finally {
+      setTimeout(() => setSuccess(null), 2000);
     }
   };
 
+
+  // --- Login / Logout ---
+  const handleLoginSuccess = () => {
+    setStatusMessage("Iniciando sesión...");
+    setTimeout(() => {
+      setLoggedIn(true);
+      setStatusMessage("");
+    }, 2000);
+  };
+
+  const handleLogout = () => {
+    setStatusMessage("Cerrando sesión...");
+    setTimeout(() => {
+      removeToken();
+      setLoggedIn(false);
+      setStatusMessage("");
+    }, 2000);
+  };
+
+  // --- Login View ---
+  if (!loggedIn) {
+    return (
+      <div className="app-container">
+        {statusMessage && (
+          <div className="status-overlay fade">
+            <p>{statusMessage}</p>
+          </div>
+        )}
+        <LoginForm API_URL={API_URL} onLoginSuccess={handleLoginSuccess} />
+      </div>
+    );
+  }
+
+  // --- Main UI ---
   return (
     <div className="app-container">
-      {/* Header */}
+      {statusMessage && (
+        <div className="status-overlay fade">
+          <p>{statusMessage}</p>
+        </div>
+      )}
+
       <header className="header">
-        <div className="header-content">
-          <h1 className="title">Salsamentaría Burbano</h1>
-          <p className="subtitle">Sistema de gestión de productos</p>
+        <div className="header-left">
+          <button className="logout-btn" onClick={handleLogout}>
+            Cerrar sesión
+          </button>
+        </div>
+        <div className="header-center">
+          <h1>Salsamentaría Burbano</h1>
+          <p>Sistema de gestión de productos</p>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="main-content">
-        {/* Form Section */}
+      <main className="main">
+        {/* FORMULARIO */}
         <section className="form-section">
-          <div className="form-header">
-            <h2>Nuevo Producto</h2>
-          </div>
+          <h2>Nuevo Producto</h2>
+          <form onSubmit={handleSubmit}>
+            <input
+              type="text"
+              placeholder="Nombre del producto"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <input
+              type="number"
+              placeholder="Precio (COP)"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <option value="">Seleccionar categoría</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <option value="">Seleccionar proveedor</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
 
-          <form onSubmit={handleSubmit} className="product-form">
-            <div className="form-group">
-              <label className="form-label">Nombre</label>
-              <input
-                type="text"
-                placeholder="Ingresa el nombre del producto"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Precio (COP)</label>
-              <input
-                type="number"
-                placeholder="0.00"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="form-input"
-                min="0"
-                step="0.01"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Categoría</label>
-              <input
-                type="text"
-                placeholder="Ej. Lácteos, Embutidos"
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <button type="submit" disabled={loading} className="submit-btn">
-              {loading ? (
-                <span className="loading-spinner">Guardando...</span>
-              ) : (
-                <span>Agregar</span>
-              )}
+            {error && <p className="error">{error}</p>}
+            {success && <p className="form-success">{success}</p>}
+            <button type="submit" disabled={loading}>
+              {loading ? "Guardando..." : "Agregar"}
             </button>
           </form>
         </section>
 
-        {/* Search and Controls */}
-        <section className="controls-section">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Buscar productos..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="search-input"
-            />
-          </div>
-
-          <div className="sort-controls">
-            <button
-              onClick={() => handleSortChange('name')}
-              className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
-            >
-              Nombre {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </button>
-            <button
-              onClick={() => handleSortChange('price')}
-              className={`sort-btn ${sortBy === 'price' ? 'active' : ''}`}
-            >
-              Precio {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </button>
-          </div>
+        {/* BUSCADOR */}
+        <section className="search-section">
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </section>
 
-        {/* Error Message */}
-        {error && (
-          <div className="error-message">
-            <span className="error-icon">⚠</span>
-            {error}
-          </div>
-        )}
+        {/* CONTROLES DE ORDEN */}
+        <div className="sort-controls">
+          <label>Ordenar por:</label>
+          <select
+            value={sort}
+            onChange={(e) => {
+              setSort(e.target.value);
+              fetchData(search, page * limit);
+            }}
+          >
+            <option value="name">Nombre</option>
+            <option value="price">Precio</option>
+            <option value="categoria">Categoría</option>
+          </select>
 
-        {/* Products List */}
+          <button
+            onClick={() => {
+              const newOrder = order === "asc" ? "desc" : "asc";
+              setOrder(newOrder);
+              fetchData(search, page * limit);
+            }}
+          >
+            {order === "asc" ? "⬆️ Ascendente" : "⬇️ Descendente"}
+          </button>
+        </div>
+
+        {/* LISTA DE PRODUCTOS */}
         <section className="products-section">
-          <div className="section-header">
-            <h2>Productos</h2>
-            <span className="product-count">
-              {products.length} {products.length === 1 ? 'producto' : 'productos'}
-            </span>
+          <h2>Productos ({total})</h2>
+          {loading && <p>Cargando...</p>}
+          <div className="products-grid">
+            {products.map((p) => (
+              <div key={p.id} className="product-card">
+                <div>
+                  <h3>{p.name}</h3>
+                  <p>
+                    ${p.price.toLocaleString("es-CO", { minimumFractionDigits: 2 })} COP
+                  </p>
+                  <p className="categoria">
+                    Categoría:{" "}
+                    {categories.find((c) => c.id === p.categoria_id)?.name ?? p.categoria_id}
+                  </p>
+                  <p className="categoria">
+                    Proveedor:{" "}
+                    {suppliers.find((s) => s.id === p.supplier_id)?.name ?? p.supplier_id}
+                  </p>
+                </div>
+                <button onClick={() => deleteProduct(p.id)}>✕</button>
+              </div>
+            ))}
+            {!products.length && !loading && <p>No hay productos aún.</p>}
           </div>
 
-          {loading && !products.length ? (
-            <div className="loading-state">
-              <div className="loading-spinner-large">⏳</div>
-              <p>Cargando productos...</p>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📦</div>
-              <h3>No hay productos</h3>
-              <p>
-                {search
-                  ? `No se encontraron productos que coincidan con "${search}"`
-                  : 'Agrega tu primer producto usando el formulario anterior'}
-              </p>
-            </div>
-          ) : (
-            <div className="products-grid">
-              {products.map((product) => (
-                <div key={product.id} className="product-card">
-                  <div className="product-info">
-                    <h3 className="product-name">{product.name}</h3>
-                    <p className="product-price">
-                      ${product.price.toLocaleString('es-CO', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })} COP
-                    </p>
-                    <p className="product-categoria">Categoría: {product.categoria}</p> {/* Añadido */}
-                  </div>
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="delete-btn"
-                    title="Eliminar producto"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+          {/* PAGINACIÓN */}
+          {!loading && total > limit && (
+            <div className="pagination">
+              <button
+                disabled={page === 0}
+                onClick={() => {
+                  const newPage = Math.max(page - 1, 0);
+                  setPage(newPage);
+                  fetchData(search, newPage * limit);
+                }}
+              >
+                ← Anterior
+              </button>
+
+              <span>
+                Página {page + 1} de {Math.ceil(total / limit)}
+              </span>
+
+              <button
+                disabled={(page + 1) * limit >= total}
+                onClick={() => {
+                  const newPage = page + 1;
+                  setPage(newPage);
+                  fetchData(search, newPage * limit);
+                }}
+              >
+                Siguiente →
+              </button>
             </div>
           )}
         </section>
@@ -277,3 +357,4 @@ function App() {
 }
 
 export default App;
+

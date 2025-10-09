@@ -1,40 +1,58 @@
-# Elevator Pitch
+# Salsamentaría Burbano — Digital Price List (MVP Semana 11)
+## Elevator Pitch
 
-En una salsamentaria tradicional, el propietario debe imprimir listas de precios constantemente para actualizarlos, lo que genera desperdicio de papel, tiempo y errores manuales. Esta solución es una aplicación web simple (accesible desde PC o móvil) que permite al propietario gestionar y actualizar precios de productos en tiempo real, con una vista pública para clientes. Dirigida a dueños de pequeños negocios como salsamentarias, reduce costos y mejora la eficiencia operativa.
+En una salsamentaria tradicional, el propietario debe imprimir listas de precios constantemente para mantenerlas actualizadas, lo que genera desperdicio de papel, tiempo y errores manuales.
+Esta aplicación web permite al propietario gestionar precios de productos en tiempo real, desde PC o celular, con un login seguro y una interfaz moderna.
+
+Dirigida a pequeños negocios como salsamentarias, reduce costos y mejora la eficiencia operativa, permitiendo actualizar precios fácilmente y que los clientes consulten la lista actualizada.
 
 
 ## Usuario Principal (Propietario/Administrador): 
-Dueño de la salsamentaria (ej. la tía del usuario). Casos de uso: Crear/actualizar/eliminar productos con precios, buscar productos, ordenar lista por nombre o precio.
+* Crear, editar y eliminar productos.
+
+* Iniciar sesión (login protegido con JWT).
+
+* Gestionar categorías y proveedores.Dueño de la salsamentaria (ej. la tía del usuario). Casos de uso: Crear/actualizar/eliminar productos con precios, buscar productos, ordenar lista por nombre o precio.
 
 ## Usuario Secundario (Cliente): 
-Visitantes que ven la lista de precios pública (sin edición). Caso de uso: Ver precios actualizados en una página simple.
-Principales casos: Gestión CRUD de productos/precios por admin, visualización pública.
+* Consultar la lista pública de precios.
+
+* Buscar y filtrar productos sin autenticación.
 
 # Objetivos y No-Objetivos
 
 ## Objetivos:
 
-Proporcionar una interfaz simple para gestionar precios.
-Integrar frontend React con backend FastAPI para CRUD básico.
-Validar integración temprana con un vertical slice funcional.
+* Implementar un MVP funcional con CRUD completo de productos, categorías y proveedores.
+
+* Añadir autenticación JWT, protección de rutas y rate limiting.
+
+* Integrar SQLite como base de datos persistente.
+
+* Proporcionar una interfaz clara y responsive.
 
 
 ## No-Objetivos (explícitamente no se hará en MVP):
 
-Autenticación de usuarios (asumimos acceso libre para MVP; post-MVP con login simple).
-Integración con bases de datos persistentes (usamos memoria temporal para MVP).
-Funcionalidades avanzadas como exportar PDF o notificaciones.
-Soporte multi-idioma o temas personalizados.
+* No se implementan roles múltiples ni multiusuario.
+
+* No se incluyen reportes PDF o notificaciones.
+
+* No se implementa despliegue en la nube (solo entorno local).
 
 
 
 ## Métricas/KPIs de Successo
 
-La API responde en <500ms para operaciones CRUD.
-UI carga lista de productos en <2s y maneja errores visiblemente.
-Al menos 80% cobertura en pruebas backend para la entidad principal.
-Feedback cualitativo: El propietario puede actualizar un precio en <1 min sin errores.
-Éxito si el vertical slice permite crear/listar productos end-to-end.
+* CRUD y autenticación responden en menos de 500ms.
+
+* UI carga productos en menos de 2 segundos.
+
+* Flujo completo: login → CRUD → logout funcional.
+
+* Manejo de errores controlado (401, 404, 409, 422, 429).
+
+* Éxito: El dueño actualiza precios en menos de 1 minuto sin errores.
 
 # Instrucciones para Ejecutar Backend y Frontend
 
@@ -92,6 +110,8 @@ Documentación inicial (README, ERD, API design).
 
 ## Semana 7
 
+## Reañozado 
+
 Objetivo: Refinar la UI y preparar la transición a base de datos.
 Tareas:
 
@@ -104,6 +124,8 @@ Crear migraciones iniciales para la tabla Producto (nombre, precio, categoria).
 Deliverable: Commit con UI mejorada y esquema de base de datos básico.
 
 ## Semana 8
+
+## Realizado
 
 Objetivo: Integrar base de datos y pruebas adicionales.
 Tareas:
@@ -118,6 +140,8 @@ Deliverable: Backend funcionando con SQLite, al menos 4 pruebas pasando.
 
 ## Semana 9
 
+## Realizado
+
 Objetivo: Añadir funcionalidad de paginación y ordenamiento avanzado.
 Tareas:
 
@@ -130,6 +154,8 @@ Refinar manejo de errores (e.g., mensajes personalizados para 404, 422).
 Deliverable: UI con paginación y ordenamiento por categoría, commit con optimizaciones.
 
 ## Semana 10
+
+## Realizado
 
 Objetivo: Preparar autenticación básica y mejorar la experiencia del usuario.
 Tareas:
@@ -144,11 +170,12 @@ Deliverable: Login funcional para admin, endpoints protegidos, commit con UI fee
 
 ## Semana 11 (Entregable 2 - MVP Funcional)
 
+## Realizado
+
 Objetivo: Entregar un MVP completo para la dueña.
 Tareas:
 
 Integrar todas las funcionalidades: CRUD, búsqueda, paginación, ordenamiento, autenticación.
-Probar con la dueña (demo local con datos reales de la salsamentaria).
 Documentar instrucciones detalladas para la dueña (cómo usar login, agregar productos).
 Preparar screenshots y video demo para el entregable.
 
@@ -279,15 +306,81 @@ Criterios de Aceptación:
 
 Dado un formulario de login, cuando ingreso credenciales válidas, entonces accedo a CRUD.
 
-# ERD (por ahora solo incluimos la entidad producto)
+# Base de Datos (SQLite + SQLAlchemy)
 
+# Entidades implementadas:
+
+| Entidad  | Campos Principales                         | Relaciones                 |
+| -------- | ------------------------------------------ | -------------------------- |
+| User     | id, username, email, hashed_password       | 1:N productos creados      |
+| Category | id, name                                   | 1:N productos              |
+| Supplier | id, name, phone, email                     | 1:N productos              |
+| Product  | id, name, price, categoria_id, supplier_id | FK a categoría y proveedor |
+
+
+# MER
+
+``` sql 
+Table users {
+  id integer [pk]
+  username varchar
+  email varchar
+  hashed_password varchar
+}
+
+Table categories {
+  id integer [pk]
+  name varchar
+}
+
+Table suppliers {
+  id integer [pk]
+  name varchar
+  phone varchar
+  email varchar
+}
+
+Table products {
+  id integer [pk]
+  name varchar
+  price float
+  categoria_id integer [ref: > categories.id]
+  supplier_id integer [ref: > suppliers.id]
+}
 +-------------+
-|  Producto   |
-| id PK       |
-| name        | (único, max 100 chars)
-| price       | (≥0)
-| categoria   | (obligatorio, max 50 chars)
-+-------------+
+```
+# Endpoints Principales
+
+| Método | Ruta           | Descripción                                    |
+| ------ | -------------- | ---------------------------------------------- |
+| POST   | /register      | Crear nuevo usuario                            |
+| POST   | /login         | Autenticación (retorna JWT)                    |
+| GET    | /me            | Datos del usuario autenticado                  |
+| GET    | /products      | Listar productos (paginación, búsqueda, orden) |
+| POST   | /products      | Crear producto (requiere JWT)                  |
+| PUT    | /products/{id} | Editar producto                                |
+| DELETE | /products/{id} | Eliminar producto                              |
+| GET    | /health        | Estado de la API (OK)                          |
+
+# Ejemplo de Login
+
+# Request:
+
+```json
+POST /login
+{
+  "username": "adminBurbano",
+  "password": "Burba12"
+}
+```
+# Rate Limiting
+
+/login: Máximo 5 solicitudes/minuto por IP.
+
+APIs autenticadas: Máximo 60 solicitudes/minuto por token/IP.
+
+Si se excede:
+HTTP 429 → {"detail": "Demasiadas solicitudes. Intenta más tarde."}
 
 # Esquema Pydantic:
 
@@ -313,25 +406,7 @@ class Product(ProductBase):
     class Config:
         from_attributes = True
 ```
-# Tabla de API y Ejemplos JSON
 
-Método   Ruta        Query/Body         Respuestas                Notas/Validaciones
--------------------------------------------------------------------------------------------------------------
-GET     /products   q, sort, order,    200 (lista),            Búsqueda por nombre, paginación
-                     offset, limit     X-Total-Count
-
-POST    /products   {name, price,      201, 409 (duplicado),   Nombre único, precio ≥0, categoria no vacía
-                    categoria}         422
-
-GET    /products        —                200, 404                          —
-       /{id} 
-
-PUT    /products   {name, price,       200, 404, 409, 422      Validaciones como POST
-       /{id}        categoria}(parcial)
-
-DELETE /products          —                 204, 404                        —
-       /{id}
---------------------------------------------------------------------------------------------------------------       
 
 # Ejemplos JSON:
 
@@ -374,6 +449,16 @@ DELETE /products          —                 204, 404                        �
 +----------------+         +----------------+
 VITE_API_URL: http://127.0.0.1:8000
 
+# Manejo de errores
+
+| Código | Descripción               | Ejemplo                                   |
+| ------ | ------------------------- | ----------------------------------------- |
+| 401    | Token inválido o expirado | {"detail": "Token inválido"}              |
+| 404    | Recurso no encontrado     | {"detail": "Producto no encontrado"}      |
+| 409    | Duplicado / conflicto     | {"detail": "Nombre ya existe"}            |
+| 422    | Datos inválidos           | {"detail": "Datos faltantes o inválidos"} |
+
+
 ## Librerías Clave y Justificación:
 
 Frontend: React + Vite (rápido desarrollo, UI reactiva), Tailwind CSS (estilos consistentes).
@@ -384,11 +469,3 @@ Razón: Simplicidad para MVP, sin dependencias pesadas.
 ## Estrategia de Estado en Frontend:
 
 Uso de useState y useEffect para manejar productos, búsqueda, y estados (carga/error) localmente. No se usan librerías adicionales (e.g., Redux) para mantener el código ligero.
-
-
-## Manejo de Errores:
-
-422 Unprocessable Entity
-404 Not Found: Mensaje en UI si producto no existe.
-409 Conflict: Alerta si nombre duplicado.
-Patrón: Respuestas con detail en JSON (e.g., {"detail": "Nombre ya existe"}).
