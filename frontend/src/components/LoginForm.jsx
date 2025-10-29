@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { saveToken } from "../utils/auth";
 import RegisterForm from "./RegisterForm";
+import { useNavigate } from "react-router-dom";
 
 function LoginForm({ API_URL, onLoginSuccess }) {
     const [username, setUsername] = useState("");
@@ -8,6 +9,8 @@ function LoginForm({ API_URL, onLoginSuccess }) {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
+
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -32,6 +35,12 @@ function LoginForm({ API_URL, onLoginSuccess }) {
             const data = await res.json();
             saveToken(data.access_token);
             onLoginSuccess();
+
+
+            setTimeout(() => {
+                navigate("/admin");
+            }, 1000);
+
         } catch (err) {
             setError(err.message);
         } finally {
@@ -45,7 +54,7 @@ function LoginForm({ API_URL, onLoginSuccess }) {
 
     return (
         <div className="login-container">
-            <h2>Iniciar sesión</h2>
+            <h2>Iniciar sesión (Admin)</h2>
             <form onSubmit={handleLogin}>
                 <input
                     type="text"
