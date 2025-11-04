@@ -9,7 +9,6 @@ function LoginForm({ API_URL, onLoginSuccess }) {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
-
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -29,18 +28,16 @@ function LoginForm({ API_URL, onLoginSuccess }) {
             });
 
             if (!res.ok) {
-                throw new Error("Credenciales incorrectas");
+                throw new Error("❌ Credenciales incorrectas");
             }
 
             const data = await res.json();
             saveToken(data.access_token);
             onLoginSuccess();
 
-
             setTimeout(() => {
                 navigate("/admin");
             }, 1000);
-
         } catch (err) {
             setError(err.message);
         } finally {
@@ -49,41 +46,68 @@ function LoginForm({ API_URL, onLoginSuccess }) {
     };
 
     if (showRegister) {
-        return <RegisterForm API_URL={API_URL} onRegistered={() => setShowRegister(false)} />;
+        return (
+            <RegisterForm
+                API_URL={API_URL}
+                onRegistered={() => setShowRegister(false)}
+            />
+        );
     }
 
     return (
         <div className="login-container">
-            <h2>Iniciar sesión (Admin)</h2>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div
+                    style={{
+                        fontSize: '3rem',
+                        marginBottom: '1rem',
+                    }}
+                >
+                    🔐
+                </div>
+                <h2>Iniciar sesión</h2>
+                <p style={{ color: 'var(--gray-600)', marginTop: '0.5rem' }}>
+                    Panel de Administración
+                </p>
+            </div>
+
             <form onSubmit={handleLogin}>
-                <input
-                    type="text"
-                    placeholder="Usuario"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                {error && <p className="error">{error}</p>}
+                <div>
+                    <input
+                        type="text"
+                        placeholder="👤 Usuario"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        autoComplete="username"
+                    />
+                </div>
+                <div>
+                    <input
+                        type="password"
+                        placeholder="🔑 Contraseña"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        autoComplete="current-password"
+                    />
+                </div>
+
+                {error && <div className="error">{error}</div>}
+
                 <button type="submit" disabled={loading}>
-                    {loading ? "Entrando..." : "Ingresar"}
+                    {loading ? "⏳ Entrando..." : "🚀 Ingresar"}
                 </button>
             </form>
-            <p style={{ marginTop: "1rem" }}>
-                ¿No tienes cuenta?{" "}
-                <button
-                    onClick={() => setShowRegister(true)}
-                    style={{ color: "#4f46e5", border: "none", background: "none", cursor: "pointer" }}
-                >
-                    Crear una
-                </button>
-            </p>
+
+            <div className="login-footer">
+                <p>
+                    ¿No tienes cuenta?{" "}
+                    <button onClick={() => setShowRegister(true)}>
+                        Crear una aquí
+                    </button>
+                </p>
+            </div>
         </div>
     );
 }

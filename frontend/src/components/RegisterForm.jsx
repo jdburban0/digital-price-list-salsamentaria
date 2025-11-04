@@ -20,6 +20,12 @@ function RegisterForm({ API_URL, onRegistered }) {
             return;
         }
 
+        // Validar longitud de contraseña
+        if (password.length < 4) {
+            setError("La contraseña debe tener al menos 4 caracteres");
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -32,12 +38,12 @@ function RegisterForm({ API_URL, onRegistered }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || "Error al registrarse");
 
-            setSuccess("Usuario registrado con éxito. Ya puedes iniciar sesión.");
+            setSuccess("Usuario registrado con éxito. Redirigiendo...");
             setUsername("");
             setEmail("");
             setPassword("");
             setConfirmPassword("");
-            setTimeout(onRegistered, 1500); // cambia a login después de 1.5s
+            setTimeout(onRegistered, 2000);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -47,57 +53,85 @@ function RegisterForm({ API_URL, onRegistered }) {
 
     return (
         <div className="login-container">
-            <h2>Crear cuenta</h2>
-            <form onSubmit={handleRegister}>
-                <input
-                    type="text"
-                    placeholder="Nombre de usuario"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                />
-                <input
-                    type="email"
-                    placeholder="Correo electrónico"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="Contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Repite la contraseña"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                />
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <h2>Crear cuenta</h2>
+                <p style={{ color: 'var(--gray-600)', marginTop: '0.5rem' }}>
+                    Únete al panel de administración
+                </p>
+            </div>
 
-                {error && <p className="error">{error}</p>}
-                {success && <p className="form-success">{success}</p>}
+            <form onSubmit={handleRegister}>
+                <div>
+                    <input
+                        type="text"
+                        placeholder="Nombre de usuario"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        autoComplete="username"
+                        minLength={3}
+                    />
+                </div>
+                <div>
+                    <input
+                        type="email"
+                        placeholder="Correo electrónico (opcional)"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
+                    />
+                </div>
+                <div>
+                    <input
+                        type="password"
+                        placeholder="Contraseña"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        minLength={4}
+                    />
+                </div>
+                <div>
+                    <input
+                        type="password"
+                        placeholder="Repite la contraseña"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        minLength={4}
+                    />
+                </div>
+
+                {error && <div className="error">{error}</div>}
+                {success && <div className="success">{success}</div>}
 
                 <button type="submit" disabled={loading}>
                     {loading ? "Registrando..." : "Crear cuenta"}
                 </button>
             </form>
-            <p style={{ marginTop: "1rem" }}>
-                ¿Ya tienes cuenta?{" "}
-                <button
-                    onClick={onRegistered}
-                    style={{
-                        color: "#4f46e5",
-                        border: "none",
-                        background: "none",
-                        cursor: "pointer",
-                    }}
-                >
-                    Iniciar sesión
-                </button>
-            </p>
+
+            <div className="login-footer">
+                <p>
+                    ¿Ya tienes cuenta?{" "}
+                    <button onClick={onRegistered}>Iniciar sesión aquí</button>
+                </p>
+            </div>
+
+            <div style={{
+                marginTop: '2rem',
+                padding: '1rem',
+                background: 'var(--gray-100)',
+                borderRadius: 'var(--radius-md)',
+                border: '2px solid var(--gray-300)',
+                fontSize: '0.8125rem',
+                color: 'var(--gray-600)'
+            }}>
+                <p style={{ margin: 0 }}>
+                    Tu información está segura. Las contraseñas son encriptadas.
+                </p>
+            </div>
         </div>
     );
 }

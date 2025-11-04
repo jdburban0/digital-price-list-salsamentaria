@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import "../App.css";
 
 function PublicList() {
@@ -11,15 +12,16 @@ function PublicList() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("");
 
     // --- Paginación y orden ---
     const [page, setPage] = useState(0);
-    const [limit] = useState(10); // Mostrar más en la vista pública
+    const [limit] = useState(12);
     const [total, setTotal] = useState(0);
     const [sort, setSort] = useState("name");
     const [order, setOrder] = useState("asc");
 
-    // --- Obtener categorías y proveedores (necesarios para mostrar nombres) ---
+    // --- Obtener categorías y proveedores ---
     const fetchCategoriesAndSuppliers = async () => {
         try {
             const [categoriesRes, suppliersRes] = await Promise.all([
@@ -77,105 +79,197 @@ function PublicList() {
         return () => clearTimeout(delay);
     }, [search, sort, order, page]);
 
+    // --- Filtrar por categoría ---
+    const filteredProducts = selectedCategory
+        ? products.filter((p) => p.categoria_id === parseInt(selectedCategory))
+        : products;
+
     // --- UI Principal ---
     return (
-        <div className="app-container">
-            <header className="header public-header">
+        <div className="app-container public-container">
+            {/* HEADER */}
+            <header className="header">
+                <div className="header-left" style={{ position: 'absolute', left: '2rem' }}>
+                    <Link to="/admin" className="public-link">
+                        Admin
+                    </Link>
+                </div>
                 <div className="header-center">
                     <h1>Salsamentaría Burbano</h1>
-                    <p>Lista de Precios</p>
+                    <p className="subtitle">
+                        Lista de Precios Actualizada
+                    </p>
                 </div>
             </header>
 
-            <main className="main">
-                {/* BUSCADOR Y ORDEN */}
-                <section className="controls-section">
+            {/* BUSCADOR Y FILTROS */}
+            <section className="controls-section">
+                <div className="search-wrapper">
                     <input
                         type="text"
                         placeholder="Buscar productos..."
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);
-                            setPage(0); // Resetear página al buscar
+                            setPage(0);
                         }}
                         className="search-input"
+                        style={{ paddingLeft: '1rem' }}
                     />
-                    <div className="sort-controls">
-                        <label>Ordenar por:</label>
-                        <select
-                            value={sort}
-                            onChange={(e) => {
-                                setSort(e.target.value);
-                                setPage(0);
-                            }}
-                        >
-                            <option value="name">Nombre</option>
-                            <option value="price">Precio</option>
-                            <option value="categoria">Categoría</option>
-                        </select>
-                        <button
-                            onClick={() => {
-                                const newOrder = order === "asc" ? "desc" : "asc";
-                                setOrder(newOrder);
-                                setPage(0);
-                            }}
-                        >
-                            {order === "asc" ? "⬆️" : "⬇️"}
-                        </button>
+                </div>
+
+                <div className="sort-controls">
+                    <label>Categoría:</label>
+                    <select
+                        value={selectedCategory}
+                        onChange={(e) => {
+                            setSelectedCategory(e.target.value);
+                            setPage(0);
+                        }}
+                    >
+                        <option value="">Todas</option>
+                        {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {c.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="sort-controls">
+                    <label>Ordenar:</label>
+                    <select
+                        value={sort}
+                        onChange={(e) => {
+                            setSort(e.target.value);
+                            setPage(0);
+                        }}
+                    >
+                        <option value="name">Nombre</option>
+                        <option value="price">Precio</option>
+                        <option value="categoria">Categoría</option>
+                    </select>
+                    <button
+                        onClick={() => {
+                            setOrder(order === "asc" ? "desc" : "asc");
+                            setPage(0);
+                        }}
+                    >
+                        {order === "asc" ? "⬆️" : "⬇️"}
+                    </button>
+                </div>
+            </section>
+
+            {/* ESTADÍSTICAS RÁPIDAS */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-label">Total Productos</div>
+                    <div className="stat-value">{total}</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-label">Categorías</div>
+                    <div className="stat-value">{categories.length}</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-label">Proveedores</div>
+                    <div className="stat-value">{suppliers.length}</div>
+                </div>
+            </div>
+
+            {/* LISTA DE PRODUCTOS */}
+            <section className="products-section">
+                <h2>
+                    Catálogo de Productos
+                    {selectedCategory && (
+                        <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--gray-600)' }}>
+                            {" "}— {categories.find((c) => c.id === parseInt(selectedCategory))?.name}
+                        </span>
+                    )}
+                </h2>
+
+                {error && (
+                    <div className="error global-error">
+                        {error}
                     </div>
-                </section>
+                )}
 
-                {/* LISTA DE PRODUCTOS */}
-                <section className="products-section">
-                    <h2>Productos ({total})</h2>
-                    {error && <p className="error">{error}</p>}
-                    {loading && <p className="loading-text">Cargando...</p>}
+                {loading && (
+                    <div className="loading-text">
+                        <div className="loading-spinner"></div>
+                        <p>Cargando productos...</p>
+                    </div>
+                )}
 
-                    <div className="products-grid">
-                        {!loading && products.map((p) => (
-                            <div key={p.id} className="product-card public-card">
+                {!loading && filteredProducts.length === 0 && !error && (
+                    <div className="loading-text">
+                        <p>No se encontraron productos.</p>
+                    </div>
+                )}
+
+                <div className="products-grid">
+                    {!loading &&
+                        filteredProducts.map((p) => (
+                            <div key={p.id} className="product-card">
                                 <h3>{p.name}</h3>
                                 <p className="product-price">
-                                    ${p.price.toLocaleString("es-CO", { minimumFractionDigits: 0 })} COP
+                                    ${p.price.toLocaleString("es-CO", {
+                                        minimumFractionDigits: 0,
+                                    })}{" "}
+                                    COP
                                 </p>
-                                <p className="categoria">
-                                    Categoría:{" "}
-                                    {categories.find((c) => c.id === p.categoria_id)?.name ?? "N/A"}
-                                </p>
-                                <p className="categoria">
-                                    Proveedor:{" "}
-                                    {suppliers.find((s) => s.id === p.supplier_id)?.name ?? "N/A"}
-                                </p>
+                                <div className="product-meta">
+                                    <div className="meta-item">
+                                        <span className="meta-label">Categoría:</span>
+                                        <span className="meta-badge">
+                                            {categories.find((c) => c.id === p.categoria_id)
+                                                ?.name ?? "N/A"}
+                                        </span>
+                                    </div>
+                                    <div className="meta-item">
+                                        <span className="meta-label">Proveedor:</span>
+                                        <span style={{ color: 'var(--gray-600)' }}>
+                                            {suppliers.find((s) => s.id === p.supplier_id)
+                                                ?.name ?? "N/A"}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         ))}
+                </div>
+
+                {/* PAGINACIÓN */}
+                {!loading && total > limit && (
+                    <div className="pagination">
+                        <button
+                            disabled={page === 0}
+                            onClick={() => setPage(Math.max(page - 1, 0))}
+                        >
+                            ← Anterior
+                        </button>
+                        <span>
+                            Página {page + 1} de {Math.ceil(total / limit)}
+                        </span>
+                        <button
+                            disabled={(page + 1) * limit >= total}
+                            onClick={() => setPage(page + 1)}
+                        >
+                            Siguiente →
+                        </button>
                     </div>
+                )}
+            </section>
 
-                    {!products.length && !loading && !error && (
-                        <p className="loading-text">No se encontraron productos.</p>
-                    )}
-
-                    {/* PAGINACIÓN */}
-                    {!loading && total > limit && (
-                        <div className="pagination">
-                            <button
-                                disabled={page === 0}
-                                onClick={() => setPage(Math.max(page - 1, 0))}
-                            >
-                                ← Anterior
-                            </button>
-                            <span>
-                                Página {page + 1} de {Math.ceil(total / limit)}
-                            </span>
-                            <button
-                                disabled={(page + 1) * limit >= total}
-                                onClick={() => setPage(page + 1)}
-                            >
-                                Siguiente →
-                            </button>
-                        </div>
-                    )}
-                </section>
-            </main>
+            {/* FOOTER */}
+            <footer style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: 'white',
+                marginTop: '2rem'
+            }}>
+                <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+                    © 2025 Salsamentaría Burbano — Proyecto Universitario
+                </p>
+            </footer>
         </div>
     );
 }

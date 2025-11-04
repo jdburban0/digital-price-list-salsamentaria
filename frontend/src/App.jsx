@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import LoginForm from "./components/LoginForm";
 import { getToken, removeToken, isAuthenticated } from "./utils/auth";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 function App() {
   const API_URL = import.meta.env.VITE_API_URL;
-  const navigate = useNavigate();
 
   // --- Estados principales ---
   const [products, setProducts] = useState([]);
@@ -21,7 +20,7 @@ function App() {
 
   // --- Paginación y orden ---
   const [page, setPage] = useState(0);
-  const [limit] = useState(6);
+  const [limit] = useState(9);
   const [total, setTotal] = useState(0);
   const [sort, setSort] = useState("name");
   const [order, setOrder] = useState("asc");
@@ -34,19 +33,21 @@ function App() {
 
   // --- Formulario Categorías ---
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [editingCategory, setEditingCategory] = useState(null); // Guarda {id, name}
+  const [editingCategory, setEditingCategory] = useState(null);
 
   // --- Formulario Proveedores ---
   const [newSupplierName, setNewSupplierName] = useState("");
   const [newSupplierPhone, setNewSupplierPhone] = useState("");
   const [newSupplierEmail, setNewSupplierEmail] = useState("");
-  const [editingSupplier, setEditingSupplier] = useState(null); // Guarda {id, name, phone, email}
+  const [editingSupplier, setEditingSupplier] = useState(null);
+
+  // --- Estado para tabs de gestión ---
+  const [activeTab, setActiveTab] = useState('categories');
 
   // --- Función para recargar TODOS los datos ---
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Obtener categorías y proveedores PRIMERO
       const [categoriesRes, suppliersRes] = await Promise.all([
         fetch(`${API_URL}/categories`),
         fetch(`${API_URL}/suppliers`),
@@ -56,7 +57,6 @@ function App() {
       setCategories(await categoriesRes.json());
       setSuppliers(await suppliersRes.json());
 
-      // Obtener productos 
       const url = new URL(`${API_URL}/products`);
       url.searchParams.append("q", search);
       url.searchParams.append("offset", page * limit);
@@ -79,20 +79,17 @@ function App() {
     }
   };
 
-  // --- Cargar datos al iniciar (SOLO SI ESTÁ LOGUEADO) ---
   useEffect(() => {
     if (loggedIn) {
       fetchAllData();
     }
   }, [loggedIn]);
 
-  // --- Recargar datos al cambiar paginación, búsqueda u orden ---
   useEffect(() => {
     if (loggedIn) {
       fetchAllData();
     }
   }, [search, sort, order, page, loggedIn]);
-
 
   // --- CRUD Productos ---
   const handleProductSubmit = async (e) => {
@@ -121,19 +118,20 @@ function App() {
       });
 
       const errData = await res.clone().json().catch(() => null);
-      if (!res.ok) throw new Error(errData?.detail || "Error al crear producto");
+      if (!res.ok)
+        throw new Error(errData?.detail || "Error al crear producto");
 
       setSuccess("Producto agregado correctamente");
       setName("");
       setPrice("");
       setCategoryId("");
       setSupplierId("");
-      setPage(0); // Volver a la página 1
-      await fetchAllData(); // Recargar todo
+      setPage(0);
+      await fetchAllData();
     } catch (err) {
       setError(err.message);
     } finally {
-      setTimeout(() => setSuccess(null), 2000);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
@@ -147,13 +145,13 @@ function App() {
       });
       if (!res.ok) throw new Error("Error al eliminar producto");
 
-      setSuccess("🗑️ Producto eliminado");
-      setPage(0); // Volver a la página 1
-      await fetchAllData(); // Recargar todo
+      setSuccess("Producto eliminado correctamente");
+      setPage(0);
+      await fetchAllData();
     } catch (err) {
       setError(err.message);
     } finally {
-      setTimeout(() => setSuccess(null), 2000);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
@@ -185,21 +183,29 @@ function App() {
       });
 
       const errData = await res.clone().json().catch(() => null);
-      if (!res.ok) throw new Error(errData?.detail || "Error al guardar categoría");
+      if (!res.ok)
+        throw new Error(errData?.detail || "Error al guardar categoría");
 
-      setSuccess(`Categoría ${editingCategory ? 'actualizada' : 'creada'}`);
+      setSuccess(
+        `Categoría ${editingCategory ? "actualizada" : "creada"} correctamente`
+      );
       setNewCategoryName("");
       setEditingCategory(null);
-      await fetchAllData(); // Recargar todo
+      await fetchAllData();
     } catch (err) {
       setError(err.message);
     } finally {
-      setTimeout(() => setSuccess(null), 2000);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
   const handleDeleteCategory = async (id) => {
-    if (!confirm("¿Eliminar esta categoría? (No se podrá si tiene productos asociados)")) return;
+    if (
+      !confirm(
+        "¿Eliminar esta categoría? (No se podrá si tiene productos asociados)"
+      )
+    )
+      return;
     try {
       const token = getToken();
       const res = await fetch(`${API_URL}/categories/${id}`, {
@@ -213,12 +219,12 @@ function App() {
       }
       if (!res.ok) throw new Error("Error al eliminar categoría");
 
-      setSuccess("Categoría eliminada");
-      await fetchAllData(); // Recargar todo
+      setSuccess("Categoría eliminada correctamente");
+      await fetchAllData();
     } catch (err) {
       setError(err.message);
     } finally {
-      setTimeout(() => setSuccess(null), 2000);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
@@ -241,7 +247,6 @@ function App() {
       : `${API_URL}/suppliers`;
     const method = editingSupplier ? "PUT" : "POST";
 
-
     const payload = {
       name: name.trim(),
       phone: phone.trim() || null,
@@ -256,7 +261,7 @@ function App() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload), // Usamos el payload corregido
+        body: JSON.stringify(payload),
       });
 
       const errData = await res.clone().json().catch(() => null);
@@ -264,21 +269,28 @@ function App() {
         throw new Error(errData?.detail || "Error al guardar proveedor");
       }
 
-      setSuccess(`Proveedor ${editingSupplier ? 'actualizado' : 'creado'}`);
+      setSuccess(
+        `Proveedor ${editingSupplier ? "actualizado" : "creado"} correctamente`
+      );
       setNewSupplierName("");
       setNewSupplierPhone("");
       setNewSupplierEmail("");
       setEditingSupplier(null);
-      await fetchAllData(); // Recargar todo
+      await fetchAllData();
     } catch (err) {
       setError(err.message);
     } finally {
-      setTimeout(() => setSuccess(null), 2000);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
   const handleDeleteSupplier = async (id) => {
-    if (!confirm("¿Eliminar esta proveedor? (No se podrá si tiene productos asociados)")) return;
+    if (
+      !confirm(
+        "¿Eliminar este proveedor? (No se podrá si tiene productos asociados)"
+      )
+    )
+      return;
     try {
       const token = getToken();
       const res = await fetch(`${API_URL}/suppliers/${id}`, {
@@ -292,15 +304,14 @@ function App() {
       }
       if (!res.ok) throw new Error("Error al eliminar proveedor");
 
-      setSuccess("🗑️ Proveedor eliminado");
-      await fetchAllData(); // Recargar todo
+      setSuccess("Proveedor eliminado correctamente");
+      await fetchAllData();
     } catch (err) {
       setError(err.message);
     } finally {
-      setTimeout(() => setSuccess(null), 2000);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
-
 
   // --- Login / Logout ---
   const handleLoginSuccess = () => {
@@ -308,7 +319,7 @@ function App() {
     setTimeout(() => {
       setLoggedIn(true);
       setStatusMessage("");
-    }, 2000);
+    }, 1500);
   };
 
   const handleLogout = () => {
@@ -317,7 +328,7 @@ function App() {
       removeToken();
       setLoggedIn(false);
       setStatusMessage("");
-    }, 2000);
+    }, 1500);
   };
 
   // --- Vista de Login ---
@@ -325,14 +336,12 @@ function App() {
     return (
       <div className="app-container">
         {statusMessage && (
-          <div className="status-overlay fade">
+          <div className="status-overlay">
+            <div className="loading-spinner"></div>
             <p>{statusMessage}</p>
           </div>
         )}
         <LoginForm API_URL={API_URL} onLoginSuccess={handleLoginSuccess} />
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <Link to="/" className="public-link">Ver lista pública de productos</Link>
-        </div>
       </div>
     );
   }
@@ -341,128 +350,244 @@ function App() {
   return (
     <div className="app-container">
       {statusMessage && (
-        <div className="status-overlay fade">
+        <div className="status-overlay">
+          <div className="loading-spinner"></div>
           <p>{statusMessage}</p>
         </div>
       )}
 
       <header className="header">
-        <div className="header-left">
+        <div className="header-left" style={{ position: 'absolute', left: '2rem' }}>
           <button className="logout-btn" onClick={handleLogout}>
             Cerrar sesión
           </button>
         </div>
         <div className="header-center">
           <h1>Panel de Administración</h1>
-          <p>Salsamentaría Burbano</p>
+          <p className="subtitle">Salsamentaría Burbano</p>
         </div>
-        <div className="header-right" style={{ position: 'absolute', right: 0 }}>
-          <Link to="/" className="public-link">Ver Lista Pública</Link>
+        <div className="header-right" style={{ position: 'absolute', right: '2rem' }}>
+          <Link to="/" className="public-link">
+            Ver Lista Pública
+          </Link>
         </div>
       </header>
 
-      {/* Mensajes globales de error/éxito */}
-      {error && <p className="error global-error">{error}</p>}
-      {success && <p className="form-success global-success">{success}</p>}
+      {/* Mensajes globales */}
+      {error && <div className="error global-error">{error}</div>}
+      {success && <div className="success global-success">{success}</div>}
 
-      <main className="main admin-main">
-        {/* --- Sección de Gestión (Categorías y Proveedores) --- */}
-        <div className="management-grid">
-          {/* --- Formulario Categorías --- */}
-          <section className="form-section card-shadow">
-            <h2>{editingCategory ? "Editando Categoría" : "Nueva Categoría"}</h2>
-            <form onSubmit={handleCategorySubmit} className="simple-form">
-              <input
-                type="text"
-                placeholder="Nombre de categoría"
-                value={editingCategory ? editingCategory.name : newCategoryName}
-                onChange={(e) =>
-                  editingCategory
-                    ? setEditingCategory({ ...editingCategory, name: e.target.value })
-                    : setNewCategoryName(e.target.value)
-                }
-              />
-              <button type="submit" disabled={loading}>
-                {editingCategory ? "Actualizar" : "Crear"}
-              </button>
-              {editingCategory && (
-                <button type="button" className="cancel-btn" onClick={() => setEditingCategory(null)}>
-                  Cancelar
-                </button>
-              )}
-            </form>
-            <div className="management-list">
-              {categories.map((c) => (
-                <div key={c.id} className="list-item">
-                  <span>{c.name}</span>
-                  <div className="list-item-buttons">
-                    <button className="edit-btn" onClick={() => setEditingCategory(c)}>Editar</button>
-                    <button className="delete-btn small-delete" onClick={() => handleDeleteCategory(c.id)}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* --- Formulario Proveedores --- */}
-          <section className="form-section card-shadow">
-            <h2>{editingSupplier ? "Editando Proveedor" : "Nuevo Proveedor"}</h2>
-            <form onSubmit={handleSupplierSubmit} className="simple-form">
-              <input
-                type="text"
-                placeholder="Nombre de proveedor"
-                value={editingSupplier ? editingSupplier.name : newSupplierName}
-                onChange={(e) =>
-                  editingSupplier
-                    ? setEditingSupplier({ ...editingSupplier, name: e.target.value })
-                    : setNewSupplierName(e.target.value)
-                }
-              />
-              <input
-                type="text"
-                placeholder="Teléfono (opcional)"
-                value={editingSupplier ? editingSupplier.phone : newSupplierPhone}
-                onChange={(e) =>
-                  editingSupplier
-                    ? setEditingSupplier({ ...editingSupplier, phone: e.target.value })
-                    : setNewSupplierPhone(e.target.value)
-                }
-              />
-              <input
-                type="email"
-                placeholder="Email (opcional)"
-                value={editingSupplier ? editingSupplier.email : newSupplierEmail}
-                onChange={(e) =>
-                  editingSupplier
-                    ? setEditingSupplier({ ...editingSupplier, email: e.target.value })
-                    : setNewSupplierEmail(e.target.value)
-                }
-              />
-              <button type="submit" disabled={loading}>
-                {editingSupplier ? "Actualizar" : "Crear"}
-              </button>
-              {editingSupplier && (
-                <button type="button" className="cancel-btn" onClick={() => setEditingSupplier(null)}>
-                  Cancelar
-                </button>
-              )}
-            </form>
-            <div className="management-list">
-              {suppliers.map((s) => (
-                <div key={s.id} className="list-item">
-                  <span>{s.name} <small>({s.phone || "sin teléfono"})</small></span>
-                  <div className="list-item-buttons">
-                    <button className="edit-btn" onClick={() => setEditingSupplier(s)}>Editar</button>
-                    <button className="delete-btn small-delete" onClick={() => handleDeleteSupplier(s.id)}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+      {/* ESTADÍSTICAS */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">Total Productos</div>
+          <div className="stat-value">{total}</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-label">Categorías</div>
+          <div className="stat-value">{categories.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Proveedores</div>
+          <div className="stat-value">{suppliers.length}</div>
+        </div>
+      </div>
 
-        {/* --- Sección de Productos --- */}
-        <section className="form-section card-shadow">
+      <main>
+        {/* GESTIÓN: Categorías y Proveedores con tabs */}
+        <section className="form-section">
+          <h2>Gestión de Catálogo</h2>
+
+          {/* Tabs para alternar entre Categorías y Proveedores */}
+          <div className="tabs-container">
+            <button
+              className={`tab-button ${activeTab === 'categories' ? 'active' : ''}`}
+              onClick={() => setActiveTab('categories')}
+            >
+              Categorías
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'suppliers' ? 'active' : ''}`}
+              onClick={() => setActiveTab('suppliers')}
+            >
+              Proveedores
+            </button>
+          </div>
+
+          {/* Contenido de Categorías */}
+          {activeTab === 'categories' && (
+            <div className="tab-content">
+              <div className="management-section">
+                <div className="management-form">
+                  <h3>{editingCategory ? "Editar Categoría" : "Nueva Categoría"}</h3>
+                  <form onSubmit={handleCategorySubmit} className="inline-form">
+                    <input
+                      type="text"
+                      placeholder="Nombre de categoría"
+                      value={editingCategory ? editingCategory.name : newCategoryName}
+                      onChange={(e) =>
+                        editingCategory
+                          ? setEditingCategory({
+                            ...editingCategory,
+                            name: e.target.value,
+                          })
+                          : setNewCategoryName(e.target.value)
+                      }
+                    />
+                    <div className="form-actions">
+                      <button type="submit" disabled={loading}>
+                        {editingCategory ? "Actualizar" : "Crear Categoría"}
+                      </button>
+                      {editingCategory && (
+                        <button
+                          type="button"
+                          className="cancel-btn"
+                          onClick={() => setEditingCategory(null)}
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="management-list-container">
+                  <h3>Categorías Existentes ({categories.length})</h3>
+                  <div className="management-list">
+                    {categories.map((c) => (
+                      <div key={c.id} className="list-item">
+                        <div className="list-item-content">
+                          <span className="list-item-name">{c.name}</span>
+                        </div>
+                        <div className="list-item-buttons">
+                          <button
+                            className="edit-btn"
+                            onClick={() => setEditingCategory(c)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="delete-btn small-delete"
+                            onClick={() => handleDeleteCategory(c.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {categories.length === 0 && (
+                      <p className="empty-message">No hay categorías creadas</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contenido de Proveedores */}
+          {activeTab === 'suppliers' && (
+            <div className="tab-content">
+              <div className="management-section">
+                <div className="management-form">
+                  <h3>{editingSupplier ? "Editar Proveedor" : "Nuevo Proveedor"}</h3>
+                  <form onSubmit={handleSupplierSubmit} className="supplier-form">
+                    <input
+                      type="text"
+                      placeholder="Nombre de proveedor"
+                      value={editingSupplier ? editingSupplier.name : newSupplierName}
+                      onChange={(e) =>
+                        editingSupplier
+                          ? setEditingSupplier({
+                            ...editingSupplier,
+                            name: e.target.value,
+                          })
+                          : setNewSupplierName(e.target.value)
+                      }
+                    />
+                    <div className="supplier-contacts">
+                      <input
+                        type="text"
+                        placeholder="Teléfono (opcional)"
+                        value={editingSupplier ? editingSupplier.phone : newSupplierPhone}
+                        onChange={(e) =>
+                          editingSupplier
+                            ? setEditingSupplier({
+                              ...editingSupplier,
+                              phone: e.target.value,
+                            })
+                            : setNewSupplierPhone(e.target.value)
+                        }
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email (opcional)"
+                        value={editingSupplier ? editingSupplier.email : newSupplierEmail}
+                        onChange={(e) =>
+                          editingSupplier
+                            ? setEditingSupplier({
+                              ...editingSupplier,
+                              email: e.target.value,
+                            })
+                            : setNewSupplierEmail(e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button type="submit" disabled={loading}>
+                        {editingSupplier ? "Actualizar" : "Crear Proveedor"}
+                      </button>
+                      {editingSupplier && (
+                        <button
+                          type="button"
+                          className="cancel-btn"
+                          onClick={() => setEditingSupplier(null)}
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="management-list-container">
+                  <h3>Proveedores Existentes ({suppliers.length})</h3>
+                  <div className="management-list">
+                    {suppliers.map((s) => (
+                      <div key={s.id} className="list-item">
+                        <div className="list-item-content">
+                          <span className="list-item-name">{s.name}</span>
+                          <span className="list-item-detail">
+                            {s.phone || "Sin teléfono"} {s.email && `• ${s.email}`}
+                          </span>
+                        </div>
+                        <div className="list-item-buttons">
+                          <button
+                            className="edit-btn"
+                            onClick={() => setEditingSupplier(s)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="delete-btn small-delete"
+                            onClick={() => handleDeleteSupplier(s.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {suppliers.length === 0 && (
+                      <p className="empty-message">No hay proveedores creados</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* NUEVO PRODUCTO */}
+        <section className="form-section">
           <h2>Nuevo Producto</h2>
           <form onSubmit={handleProductSubmit}>
             <input
@@ -477,7 +602,10 @@ function App() {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
             />
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
               <option value="">Seleccionar categoría</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -485,7 +613,10 @@ function App() {
                 </option>
               ))}
             </select>
-            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+            <select
+              value={supplierId}
+              onChange={(e) => setSupplierId(e.target.value)}
+            >
               <option value="">Seleccionar proveedor</option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -499,21 +630,24 @@ function App() {
           </form>
         </section>
 
+        {/* LISTADO DE PRODUCTOS */}
         <section className="products-section">
-          {/* BUSCADOR Y ORDEN */}
-          <div className="controls-section card-shadow">
-            <input
-              type="text"
-              placeholder="Buscar productos..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-              className="search-input"
-            />
+          {/* Búsqueda y orden */}
+          <div className="controls-section">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+                className="search-input"
+              />
+            </div>
             <div className="sort-controls">
-              <label>Ordenar por:</label>
+              <label>Ordenar:</label>
               <select
                 value={sort}
                 onChange={(e) => {
@@ -531,40 +665,63 @@ function App() {
                   setPage(0);
                 }}
               >
-                {order === "asc" ? "⬆️ Asc" : "⬇️ Desc"}
+                {order === "asc" ? "⬆️" : "⬇️"}
               </button>
             </div>
           </div>
 
-          {/* LISTA DE PRODUCTOS */}
           <h2>Productos en Gestión ({total})</h2>
-          {loading && <p className="loading-text">Cargando...</p>}
+
+          {loading && (
+            <div className="loading-text">
+              <div className="loading-spinner"></div>
+              <p>Cargando...</p>
+            </div>
+          )}
 
           <div className="products-grid">
-            {!loading && products.map((p) => (
-              <div key={p.id} className="product-card card-shadow">
-                <div>
+            {!loading &&
+              products.map((p) => (
+                <div key={p.id} className="product-card">
                   <h3>{p.name}</h3>
                   <p className="product-price">
-                    ${parseFloat(p.price).toLocaleString("es-CO", { minimumFractionDigits: 0 })} COP
+                    $
+                    {parseFloat(p.price).toLocaleString("es-CO", {
+                      minimumFractionDigits: 0,
+                    })}{" "}
+                    COP
                   </p>
-                  <p className="categoria">
-                    Cat:{" "}
-                    {categories.find((c) => c.id === p.categoria_id)?.name ?? "N/A"}
-                  </p>
-                  <p className="categoria">
-                    Prov:{" "}
-                    {suppliers.find((s) => s.id === p.supplier_id)?.name ?? "N/A"}
-                  </p>
+                  <div className="product-meta">
+                    <div className="meta-item">
+                      <span className="meta-label">Categoría:</span>
+                      <span className="meta-badge">
+                        {categories.find((c) => c.id === p.categoria_id)
+                          ?.name ?? "N/A"}
+                      </span>
+                    </div>
+                    <div className="meta-item">
+                      <span className="meta-label">Proveedor:</span>
+                      <span style={{ color: 'var(--gray-600)' }}>
+                        {suppliers.find((s) => s.id === p.supplier_id)
+                          ?.name ?? "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    className="delete-btn"
+                    onClick={() => deleteProduct(p.id)}
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button className="delete-btn" onClick={() => deleteProduct(p.id)}>✕</button>
-              </div>
-            ))}
+              ))}
           </div>
 
-          {!products.length && !loading && !error && <p className="loading-text">No hay productos aún.</p>}
+          {!products.length && !loading && !error && (
+            <p className="loading-text">No hay productos aún.</p>
+          )}
 
-          {/* PAGINACIÓN */}
+          {/* Paginación */}
           {!loading && total > limit && (
             <div className="pagination">
               <button
