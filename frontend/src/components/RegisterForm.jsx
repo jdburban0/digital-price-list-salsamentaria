@@ -5,6 +5,7 @@ function RegisterForm({ API_URL, onRegistered }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [inviteCode, setInviteCode] = useState(""); // ← NUEVO
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -14,15 +15,18 @@ function RegisterForm({ API_URL, onRegistered }) {
         setError(null);
         setSuccess(null);
 
-        // Validar coincidencia de contraseñas
         if (password !== confirmPassword) {
             setError("Las contraseñas no coinciden");
             return;
         }
 
-        // Validar longitud de contraseña
         if (password.length < 4) {
             setError("La contraseña debe tener al menos 4 caracteres");
+            return;
+        }
+
+        if (!email.trim()) {
+            setError("El correo electrónico es obligatorio");
             return;
         }
 
@@ -32,17 +36,18 @@ function RegisterForm({ API_URL, onRegistered }) {
             const res = await fetch(`${API_URL}/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, email, password }),
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password,
+                    invite_code: inviteCode
+                }),
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || "Error al registrarse");
 
             setSuccess("Usuario registrado con éxito. Redirigiendo...");
-            setUsername("");
-            setEmail("");
-            setPassword("");
-            setConfirmPassword("");
             setTimeout(onRegistered, 2000);
         } catch (err) {
             setError(err.message);
@@ -61,48 +66,44 @@ function RegisterForm({ API_URL, onRegistered }) {
             </div>
 
             <form onSubmit={handleRegister}>
-                <div>
-                    <input
-                        type="text"
-                        placeholder="Nombre de usuario"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        autoComplete="username"
-                        minLength={3}
-                    />
-                </div>
-                <div>
-                    <input
-                        type="email"
-                        placeholder="Correo electrónico (opcional)"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
-                    />
-                </div>
-                <div>
-                    <input
-                        type="password"
-                        placeholder="Contraseña"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        autoComplete="new-password"
-                        minLength={4}
-                    />
-                </div>
-                <div>
-                    <input
-                        type="password"
-                        placeholder="Repite la contraseña"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        autoComplete="new-password"
-                        minLength={4}
-                    />
-                </div>
+                <input
+                    type="text"
+                    placeholder="Código de invitación"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    required
+                    autoComplete="off"
+                />
+                <input
+                    type="text"
+                    placeholder="Nombre de usuario"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    minLength={3}
+                />
+                <input
+                    type="email"
+                    placeholder="Correo electrónico"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                <input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={4}
+                />
+                <input
+                    type="password"
+                    placeholder="Repite la contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={4}
+                />
 
                 {error && <div className="error">{error}</div>}
                 {success && <div className="success">{success}</div>}
@@ -116,20 +117,6 @@ function RegisterForm({ API_URL, onRegistered }) {
                 <p>
                     ¿Ya tienes cuenta?{" "}
                     <button onClick={onRegistered}>Iniciar sesión aquí</button>
-                </p>
-            </div>
-
-            <div style={{
-                marginTop: '2rem',
-                padding: '1rem',
-                background: 'var(--gray-100)',
-                borderRadius: 'var(--radius-md)',
-                border: '2px solid var(--gray-300)',
-                fontSize: '0.8125rem',
-                color: 'var(--gray-600)'
-            }}>
-                <p style={{ margin: 0 }}>
-                    Tu información está segura. Las contraseñas son encriptadas.
                 </p>
             </div>
         </div>

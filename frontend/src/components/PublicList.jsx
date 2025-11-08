@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import ThemeToggle from "./Themetoggle";
 import "../App.css";
 
 function PublicList() {
@@ -87,6 +88,8 @@ function PublicList() {
     // --- UI Principal ---
     return (
         <div className="app-container public-container">
+            <ThemeToggle />
+
             {/* HEADER */}
             <header className="header">
                 <div className="header-left" style={{ position: 'absolute', left: '2rem' }}>
@@ -155,7 +158,7 @@ function PublicList() {
                             setPage(0);
                         }}
                     >
-                        {order === "asc" ? "⬆️" : "⬇️"}
+                        {order === "asc" ? "🡱" : "🡳"}
                     </button>
                 </div>
             </section>
@@ -181,7 +184,7 @@ function PublicList() {
                 <h2>
                     Catálogo de Productos
                     {selectedCategory && (
-                        <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--gray-600)' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
                             {" "}— {categories.find((c) => c.id === parseInt(selectedCategory))?.name}
                         </span>
                     )}
@@ -227,7 +230,7 @@ function PublicList() {
                                     </div>
                                     <div className="meta-item">
                                         <span className="meta-label">Proveedor:</span>
-                                        <span style={{ color: 'var(--gray-600)' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>
                                             {suppliers.find((s) => s.id === p.supplier_id)
                                                 ?.name ?? "N/A"}
                                         </span>
@@ -263,7 +266,7 @@ function PublicList() {
             <footer style={{
                 textAlign: 'center',
                 padding: '2rem',
-                color: 'white',
+                color: 'var(--text-secondary)',
                 marginTop: '2rem'
             }}>
                 <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>

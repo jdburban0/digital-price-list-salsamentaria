@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 import LoginForm from "./components/LoginForm";
+import ThemeToggle from "./components/Themetoggle";
 import { getToken, removeToken, isAuthenticated } from "./utils/auth";
 import { Link } from "react-router-dom";
 
@@ -335,6 +336,7 @@ function App() {
   if (!loggedIn) {
     return (
       <div className="app-container">
+        <ThemeToggle />
         {statusMessage && (
           <div className="status-overlay">
             <div className="loading-spinner"></div>
@@ -349,6 +351,7 @@ function App() {
   // --- UI Principal (Admin) ---
   return (
     <div className="app-container">
+      <ThemeToggle />
       {statusMessage && (
         <div className="status-overlay">
           <div className="loading-spinner"></div>
@@ -701,7 +704,7 @@ function App() {
                     </div>
                     <div className="meta-item">
                       <span className="meta-label">Proveedor:</span>
-                      <span style={{ color: 'var(--gray-600)' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>
                         {suppliers.find((s) => s.id === p.supplier_id)
                           ?.name ?? "N/A"}
                       </span>
