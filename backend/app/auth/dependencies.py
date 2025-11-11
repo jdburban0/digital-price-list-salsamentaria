@@ -1,14 +1,15 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
-from app.db import UserDB
 
-SECRET_KEY = "supersecreto123"  
-ALGORITHM = "HS256"
+from app.core.config import settings
+from app.db import SessionLocal, UserDB
+
+SECRET_KEY = settings.JWT_SECRET
+ALGORITHM = settings.JWT_ALGORITHM
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
@@ -28,11 +29,10 @@ def create_admin_user(db: Session):
     admin = db.query(UserDB).filter(UserDB.username == "admin").first()
     if not admin:
         hashed_pw = pwd_context.hash("1234")
-        new_admin = UserDB(username="admin", hashed_password=hashed_pw)
+        new_admin = UserDB(username="admin", email="admin@salsamentaria.com", hashed_password=hashed_pw)
         db.add(new_admin)
         db.commit()
         db.refresh(new_admin)
-        print("Usuario admin creado (admin / 1234)")
 
 
 def verify_password(plain_password, hashed_password):
@@ -69,4 +69,3 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
 
     return user
-

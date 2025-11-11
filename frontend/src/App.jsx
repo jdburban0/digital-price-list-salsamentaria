@@ -5,13 +5,18 @@ import ThemeToggle from "./components/Themetoggle";
 import { getToken, removeToken, isAuthenticated } from "./utils/auth";
 import { Link } from "react-router-dom";
 
+const ORDER_STATUSES = ["pendiente", "en preparación", "completado", "cancelado"];
+
 function App() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   // --- Estados principales ---
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -42,19 +47,58 @@ function App() {
   const [newSupplierEmail, setNewSupplierEmail] = useState("");
   const [editingSupplier, setEditingSupplier] = useState(null);
 
+  // --- Formulario Clientes ---
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [editingCustomer, setEditingCustomer] = useState(null);
+
+  // --- Formulario Pedidos ---
+  const [orderCustomerId, setOrderCustomerId] = useState("");
+  const [orderProductId, setOrderProductId] = useState("");
+  const [orderQuantity, setOrderQuantity] = useState(1);
+  const [orderStatus, setOrderStatus] = useState(ORDER_STATUSES[0]);
+  const [orderNotes, setOrderNotes] = useState("");
+
   // --- Estado para tabs de gestión ---
-  const [activeTab, setActiveTab] = useState('categories');
+  const [activeTab, setActiveTab] = useState("categories");
+
+  const formatCurrency = (value) =>
+    parseFloat(value).toLocaleString("es-CO", {
+      minimumFractionDigits: 0,
+    });
+
+  const formatDate = (value) =>
+    new Date(value).toLocaleString("es-CO", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
 
   // --- Función para recargar TODOS los datos ---
   const fetchAllData = async () => {
+    if (!API_URL) return;
     setLoading(true);
+    const token = getToken();
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      const [categoriesRes, suppliersRes] = await Promise.all([
+      const [categoriesRes, suppliersRes, customersRes] = await Promise.all([
         fetch(`${API_URL}/categories`),
         fetch(`${API_URL}/suppliers`),
+        fetch(`${API_URL}/customers`, { headers: authHeaders }),
       ]);
-      if (!categoriesRes.ok || !suppliersRes.ok)
+
+      if (!categoriesRes.ok || !suppliersRes.ok) {
         throw new Error("Error al obtener datos iniciales");
+      }
+
+      if (customersRes.status === 401) {
+        setCustomers([]);
+      } else if (!customersRes.ok) {
+        throw new Error("Error al obtener clientes");
+      } else {
+        setCustomers(await customersRes.json());
+      }
+
       setCategories(await categoriesRes.json());
       setSuppliers(await suppliersRes.json());
 
@@ -72,6 +116,28 @@ function App() {
       const totalCount = res.headers.get("x-total-count");
       setTotal(parseInt(totalCount || "0"));
       setProducts(data);
+
+      const allProductsRes = await fetch(
+        `${API_URL}/products?offset=0&limit=200&sort=name&order=asc`
+      );
+      if (allProductsRes.ok) {
+        setAllProducts(await allProductsRes.json());
+      } else {
+        setAllProducts(data);
+      }
+
+      if (token) {
+        const ordersRes = await fetch(`${API_URL}/orders`, { headers: authHeaders });
+        if (ordersRes.status === 401) {
+          setOrders([]);
+        } else if (!ordersRes.ok) {
+          throw new Error("Error al obtener pedidos");
+        } else {
+          setOrders(await ordersRes.json());
+        }
+      } else {
+        setOrders([]);
+      }
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -90,6 +156,7 @@ function App() {
     if (loggedIn) {
       fetchAllData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, sort, order, page, loggedIn]);
 
   // --- CRUD Productos ---
@@ -159,8 +226,8 @@ function App() {
   // --- CRUD Categorías ---
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
-    const name = editingCategory ? editingCategory.name : newCategoryName;
-    if (!name.trim()) {
+    const catName = editingCategory ? editingCategory.name : newCategoryName;
+    if (!catName.trim()) {
       setError("El nombre de la categoría no puede estar vacío");
       return;
     }
@@ -180,7 +247,7 @@ function App() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: catName.trim() }),
       });
 
       const errData = await res.clone().json().catch(() => null);
@@ -232,11 +299,11 @@ function App() {
   // --- CRUD Proveedores ---
   const handleSupplierSubmit = async (e) => {
     e.preventDefault();
-    const name = editingSupplier ? editingSupplier.name : newSupplierName;
+    const suppName = editingSupplier ? editingSupplier.name : newSupplierName;
     const phone = editingSupplier ? editingSupplier.phone : newSupplierPhone;
     const email = editingSupplier ? editingSupplier.email : newSupplierEmail;
 
-    if (!name.trim()) {
+    if (!suppName.trim()) {
       setError("El nombre del proveedor no puede estar vacío");
       return;
     }
@@ -249,7 +316,7 @@ function App() {
     const method = editingSupplier ? "PUT" : "POST";
 
     const payload = {
-      name: name.trim(),
+      name: suppName.trim(),
       phone: phone.trim() || null,
       email: email.trim() || null,
     };
@@ -314,6 +381,178 @@ function App() {
     }
   };
 
+  // --- CRUD Clientes ---
+  const handleCustomerSubmit = async (e) => {
+    e.preventDefault();
+    const customerName = editingCustomer ? editingCustomer.name : newCustomerName;
+    const customerEmail = editingCustomer ? editingCustomer.email : newCustomerEmail;
+    const customerPhone = editingCustomer ? editingCustomer.phone : newCustomerPhone;
+
+    if (!customerName.trim() || !customerEmail.trim()) {
+      setError("Nombre y correo del cliente son obligatorios");
+      return;
+    }
+
+    const url = editingCustomer
+      ? `${API_URL}/customers/${editingCustomer.id}`
+      : `${API_URL}/customers`;
+    const method = editingCustomer ? "PUT" : "POST";
+    const payload = {
+      name: customerName.trim(),
+      email: customerEmail.trim(),
+      phone: customerPhone.trim() || null,
+    };
+
+    try {
+      const token = getToken();
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const errData = await res.clone().json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(errData?.detail || "Error al guardar cliente");
+      }
+
+      setSuccess(
+        `Cliente ${editingCustomer ? "actualizado" : "creado"} correctamente`
+      );
+      setNewCustomerName("");
+      setNewCustomerEmail("");
+      setNewCustomerPhone("");
+      setEditingCustomer(null);
+      await fetchAllData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  const handleDeleteCustomer = async (id) => {
+    if (!confirm("¿Eliminar este cliente?")) return;
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/customers/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 400) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "No se puede eliminar el cliente");
+      }
+      if (!res.ok) throw new Error("Error al eliminar cliente");
+
+      setSuccess("Cliente eliminado correctamente");
+      await fetchAllData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  // --- CRUD Pedidos ---
+  const resetOrderForm = () => {
+    setOrderCustomerId("");
+    setOrderProductId("");
+    setOrderQuantity(1);
+    setOrderStatus(ORDER_STATUSES[0]);
+    setOrderNotes("");
+  };
+
+  const handleOrderSubmit = async (e) => {
+    e.preventDefault();
+    if (!orderCustomerId || !orderProductId) {
+      setError("Selecciona cliente y producto para el pedido");
+      return;
+    }
+
+    const payload = {
+      customer_id: parseInt(orderCustomerId),
+      product_id: parseInt(orderProductId),
+      quantity: Math.max(1, parseInt(orderQuantity)),
+      status: orderStatus,
+      notes: orderNotes.trim() || null,
+    };
+
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const errData = await res.clone().json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(errData?.detail || "Error al crear pedido");
+      }
+
+      setSuccess("Pedido registrado correctamente");
+      resetOrderForm();
+      await fetchAllData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const errData = await res.clone().json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(errData?.detail || "Error al actualizar pedido");
+      }
+
+      setSuccess("Pedido actualizado correctamente");
+      await fetchAllData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!confirm("¿Eliminar este pedido?")) return;
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/orders/${orderId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Error al eliminar pedido");
+
+      setSuccess("Pedido eliminado correctamente");
+      await fetchAllData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
   // --- Login / Logout ---
   const handleLoginSuccess = () => {
     setStatusMessage("Iniciando sesión...");
@@ -329,6 +568,10 @@ function App() {
       removeToken();
       setLoggedIn(false);
       setStatusMessage("");
+      setProducts([]);
+      setAllProducts([]);
+      setCustomers([]);
+      setOrders([]);
     }, 1500);
   };
 
@@ -360,7 +603,7 @@ function App() {
       )}
 
       <header className="header">
-        <div className="header-left" style={{ position: 'absolute', left: '2rem' }}>
+        <div className="header-left" style={{ position: "absolute", left: "2rem" }}>
           <button className="logout-btn" onClick={handleLogout}>
             Cerrar sesión
           </button>
@@ -369,7 +612,7 @@ function App() {
           <h1>Panel de Administración</h1>
           <p className="subtitle">Salsamentaría Burbano</p>
         </div>
-        <div className="header-right" style={{ position: 'absolute', right: '2rem' }}>
+        <div className="header-right" style={{ position: "absolute", right: "2rem" }}>
           <Link to="/" className="public-link">
             Ver Lista Pública
           </Link>
@@ -394,31 +637,43 @@ function App() {
           <div className="stat-label">Proveedores</div>
           <div className="stat-value">{suppliers.length}</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-label">Clientes</div>
+          <div className="stat-value">{customers.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Pedidos</div>
+          <div className="stat-value">{orders.length}</div>
+        </div>
       </div>
 
       <main>
-        {/* GESTIÓN: Categorías y Proveedores con tabs */}
+        {/* GESTIÓN: Categorías, Proveedores y Clientes con tabs */}
         <section className="form-section">
           <h2>Gestión de Catálogo</h2>
 
-          {/* Tabs para alternar entre Categorías y Proveedores */}
           <div className="tabs-container">
             <button
-              className={`tab-button ${activeTab === 'categories' ? 'active' : ''}`}
-              onClick={() => setActiveTab('categories')}
+              className={`tab-button ${activeTab === "categories" ? "active" : ""}`}
+              onClick={() => setActiveTab("categories")}
             >
               Categorías
             </button>
             <button
-              className={`tab-button ${activeTab === 'suppliers' ? 'active' : ''}`}
-              onClick={() => setActiveTab('suppliers')}
+              className={`tab-button ${activeTab === "suppliers" ? "active" : ""}`}
+              onClick={() => setActiveTab("suppliers")}
             >
               Proveedores
             </button>
+            <button
+              className={`tab-button ${activeTab === "customers" ? "active" : ""}`}
+              onClick={() => setActiveTab("customers")}
+            >
+              Clientes
+            </button>
           </div>
 
-          {/* Contenido de Categorías */}
-          {activeTab === 'categories' && (
+          {activeTab === "categories" && (
             <div className="tab-content">
               <div className="management-section">
                 <div className="management-form">
@@ -431,9 +686,9 @@ function App() {
                       onChange={(e) =>
                         editingCategory
                           ? setEditingCategory({
-                            ...editingCategory,
-                            name: e.target.value,
-                          })
+                              ...editingCategory,
+                              name: e.target.value,
+                            })
                           : setNewCategoryName(e.target.value)
                       }
                     />
@@ -487,8 +742,7 @@ function App() {
             </div>
           )}
 
-          {/* Contenido de Proveedores */}
-          {activeTab === 'suppliers' && (
+          {activeTab === "suppliers" && (
             <div className="tab-content">
               <div className="management-section">
                 <div className="management-form">
@@ -501,9 +755,9 @@ function App() {
                       onChange={(e) =>
                         editingSupplier
                           ? setEditingSupplier({
-                            ...editingSupplier,
-                            name: e.target.value,
-                          })
+                              ...editingSupplier,
+                              name: e.target.value,
+                            })
                           : setNewSupplierName(e.target.value)
                       }
                     />
@@ -515,22 +769,22 @@ function App() {
                         onChange={(e) =>
                           editingSupplier
                             ? setEditingSupplier({
-                              ...editingSupplier,
-                              phone: e.target.value,
-                            })
+                                ...editingSupplier,
+                                phone: e.target.value,
+                              })
                             : setNewSupplierPhone(e.target.value)
                         }
                       />
                       <input
                         type="email"
-                        placeholder="Email (opcional)"
+                        placeholder="Correo (opcional)"
                         value={editingSupplier ? editingSupplier.email : newSupplierEmail}
                         onChange={(e) =>
                           editingSupplier
                             ? setEditingSupplier({
-                              ...editingSupplier,
-                              email: e.target.value,
-                            })
+                                ...editingSupplier,
+                                email: e.target.value,
+                              })
                             : setNewSupplierEmail(e.target.value)
                         }
                       />
@@ -553,15 +807,13 @@ function App() {
                 </div>
 
                 <div className="management-list-container">
-                  <h3>Proveedores Existentes ({suppliers.length})</h3>
+                  <h3>Proveedores ({suppliers.length})</h3>
                   <div className="management-list">
                     {suppliers.map((s) => (
                       <div key={s.id} className="list-item">
                         <div className="list-item-content">
                           <span className="list-item-name">{s.name}</span>
-                          <span className="list-item-detail">
-                            {s.phone || "Sin teléfono"} {s.email && `• ${s.email}`}
-                          </span>
+                          <span className="list-item-sub">{s.phone || "Sin teléfono"}</span>
                         </div>
                         <div className="list-item-buttons">
                           <button
@@ -580,7 +832,103 @@ function App() {
                       </div>
                     ))}
                     {suppliers.length === 0 && (
-                      <p className="empty-message">No hay proveedores creados</p>
+                      <p className="empty-message">No hay proveedores registrados</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "customers" && (
+            <div className="tab-content">
+              <div className="management-section">
+                <div className="management-form">
+                  <h3>{editingCustomer ? "Editar Cliente" : "Nuevo Cliente"}</h3>
+                  <form onSubmit={handleCustomerSubmit} className="customer-form">
+                    <input
+                      type="text"
+                      placeholder="Nombre del cliente"
+                      value={editingCustomer ? editingCustomer.name : newCustomerName}
+                      onChange={(e) =>
+                        editingCustomer
+                          ? setEditingCustomer({
+                              ...editingCustomer,
+                              name: e.target.value,
+                            })
+                          : setNewCustomerName(e.target.value)
+                      }
+                    />
+                    <input
+                      type="email"
+                      placeholder="Correo del cliente"
+                      value={editingCustomer ? editingCustomer.email : newCustomerEmail}
+                      onChange={(e) =>
+                        editingCustomer
+                          ? setEditingCustomer({
+                              ...editingCustomer,
+                              email: e.target.value,
+                            })
+                          : setNewCustomerEmail(e.target.value)
+                      }
+                    />
+                    <input
+                      type="text"
+                      placeholder="Teléfono (opcional)"
+                      value={editingCustomer ? editingCustomer.phone ?? "" : newCustomerPhone}
+                      onChange={(e) =>
+                        editingCustomer
+                          ? setEditingCustomer({
+                              ...editingCustomer,
+                              phone: e.target.value,
+                            })
+                          : setNewCustomerPhone(e.target.value)
+                      }
+                    />
+                    <div className="form-actions">
+                      <button type="submit" disabled={loading}>
+                        {editingCustomer ? "Actualizar" : "Crear Cliente"}
+                      </button>
+                      {editingCustomer && (
+                        <button
+                          type="button"
+                          className="cancel-btn"
+                          onClick={() => setEditingCustomer(null)}
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="management-list-container">
+                  <h3>Clientes ({customers.length})</h3>
+                  <div className="management-list">
+                    {customers.map((c) => (
+                      <div key={c.id} className="list-item">
+                        <div className="list-item-content">
+                          <span className="list-item-name">{c.name}</span>
+                          <span className="list-item-sub">{c.email}</span>
+                        </div>
+                        <div className="list-item-buttons">
+                          <button
+                            className="edit-btn"
+                            onClick={() => setEditingCustomer(c)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="delete-btn small-delete"
+                            onClick={() => handleDeleteCustomer(c.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {customers.length === 0 && (
+                      <p className="empty-message">No hay clientes registrados</p>
                     )}
                   </div>
                 </div>
@@ -589,53 +937,176 @@ function App() {
           )}
         </section>
 
-        {/* NUEVO PRODUCTO */}
+        {/* FORMULARIO DE PRODUCTOS */}
         <section className="form-section">
-          <h2>Nuevo Producto</h2>
-          <form onSubmit={handleProductSubmit}>
-            <input
-              type="text"
-              placeholder="Nombre del producto"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Precio (COP)"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <option value="">Seleccionar categoría</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
-            >
-              <option value="">Seleccionar proveedor</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+          <h2>Agregar Producto</h2>
+          <form onSubmit={handleProductSubmit} className="product-form">
+            <div className="form-grid">
+              <input
+                type="text"
+                placeholder="Nombre del producto"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Precio"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                min="0"
+              />
+            </div>
+            <div className="form-grid">
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">Seleccionar categoría</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                <option value="">Seleccionar proveedor</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button type="submit" disabled={loading}>
               {loading ? "Guardando..." : "Agregar Producto"}
             </button>
           </form>
         </section>
 
+        {/* GESTIÓN DE PEDIDOS */}
+        <section className="orders-section">
+          <h2>Gestión de Pedidos</h2>
+          <div className="orders-management">
+            <form onSubmit={handleOrderSubmit} className="orders-form">
+              <div className="form-row">
+                <select
+                  value={orderCustomerId}
+                  onChange={(e) => setOrderCustomerId(e.target.value)}
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={orderProductId}
+                  onChange={(e) => setOrderProductId(e.target.value)}
+                >
+                  <option value="">Selecciona un producto</option>
+                  {allProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="1"
+                  value={orderQuantity}
+                  onChange={(e) => setOrderQuantity(e.target.value)}
+                  placeholder="Cantidad"
+                />
+                <select
+                  value={orderStatus}
+                  onChange={(e) => setOrderStatus(e.target.value)}
+                  className="status-select"
+                >
+                  {ORDER_STATUSES.map((statusOption) => (
+                    <option key={statusOption} value={statusOption}>
+                      {statusOption}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                placeholder="Notas adicionales (opcional)"
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+              />
+              <div className="form-actions">
+                <button type="submit">Registrar pedido</button>
+                <button type="button" className="cancel-btn" onClick={resetOrderForm}>
+                  Limpiar
+                </button>
+              </div>
+            </form>
+
+            <div className="orders-list">
+              {orders.length === 0 && (
+                <p className="empty-message">No hay pedidos registrados</p>
+              )}
+              {orders.map((orderItem) => (
+                <div key={orderItem.id} className="order-card">
+                  <header>
+                    <div>
+                      <h3>Pedido #{orderItem.id}</h3>
+                      <p className="order-meta">
+                        <span>Fecha:</span> {formatDate(orderItem.created_at)}
+                      </p>
+                    </div>
+                    <div className="order-status">
+                      <span
+                        className="status-badge"
+                        data-status={orderItem.status}
+                      >
+                        {orderItem.status}
+                      </span>
+                      <select
+                        className="status-select"
+                        value={orderItem.status}
+                        onChange={(e) => updateOrderStatus(orderItem.id, e.target.value)}
+                      >
+                        {ORDER_STATUSES.map((statusOption) => (
+                          <option key={statusOption} value={statusOption}>
+                            {statusOption}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </header>
+                  <div className="order-body">
+                    <p className="order-meta">
+                      <span>Cliente:</span> {orderItem.customer?.name}
+                    </p>
+                    <p className="order-meta">
+                      <span>Producto:</span> {orderItem.product?.name}
+                    </p>
+                    <p className="order-meta">
+                      <span>Cantidad:</span> {orderItem.quantity}
+                    </p>
+                    <p className="order-meta">
+                      <span>Total estimado:</span> ${" "}
+                      {formatCurrency(orderItem.product?.price * orderItem.quantity || 0)} COP
+                    </p>
+                    {orderItem.notes && (
+                      <p className="order-notes">“{orderItem.notes}”</p>
+                    )}
+                  </div>
+                  <div className="order-actions">
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDeleteOrder(orderItem.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* LISTADO DE PRODUCTOS */}
         <section className="products-section">
-          {/* Búsqueda y orden */}
           <div className="controls-section">
             <div className="search-wrapper">
               <input
@@ -688,25 +1159,20 @@ function App() {
                 <div key={p.id} className="product-card">
                   <h3>{p.name}</h3>
                   <p className="product-price">
-                    $
-                    {parseFloat(p.price).toLocaleString("es-CO", {
-                      minimumFractionDigits: 0,
-                    })}{" "}
-                    COP
+                    ${" "}
+                    {formatCurrency(p.price)} COP
                   </p>
                   <div className="product-meta">
                     <div className="meta-item">
                       <span className="meta-label">Categoría:</span>
                       <span className="meta-badge">
-                        {categories.find((c) => c.id === p.categoria_id)
-                          ?.name ?? "N/A"}
+                        {categories.find((c) => c.id === p.categoria_id)?.name ?? "N/A"}
                       </span>
                     </div>
                     <div className="meta-item">
                       <span className="meta-label">Proveedor:</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>
-                        {suppliers.find((s) => s.id === p.supplier_id)
-                          ?.name ?? "N/A"}
+                      <span style={{ color: "var(--text-secondary)" }}>
+                        {suppliers.find((s) => s.id === p.supplier_id)?.name ?? "N/A"}
                       </span>
                     </div>
                   </div>
@@ -724,7 +1190,6 @@ function App() {
             <p className="loading-text">No hay productos aún.</p>
           )}
 
-          {/* Paginación */}
           {!loading && total > limit && (
             <div className="pagination">
               <button

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from app.db import SessionLocal, CategoryDB, ProductDB 
 from app.models.category import Category, CategoryCreate, CategoryUpdate   
 from typing import List

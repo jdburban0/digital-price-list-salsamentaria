@@ -50,9 +50,8 @@ def list_products(
 
     # --- Paginación ---
     total = query.count()
-    print("TOTAL DE PRODUCTOS:", total)  #para verificar en consola
 
-    #asegura que se envíe la cabecera correctamente
+    # asegura que se envíe la cabecera correctamente
     response.headers["X-Total-Count"] = str(total)
 
     products = query.offset(offset).limit(limit).all()
