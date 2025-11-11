@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 
 
 class ProductBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     price: float = Field(..., ge=0)
-    categoria_id: int = Field(..., description="ID de la categoría relacionada")
+    categoria_id: int = Field(..., description="ID de la categoria relacionada")
     supplier_id: int = Field(..., description="ID del proveedor relacionado")
 
 
@@ -23,7 +23,6 @@ class ProductUpdate(BaseModel):
 class Product(ProductBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 

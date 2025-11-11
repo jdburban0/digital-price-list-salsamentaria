@@ -14,7 +14,7 @@ def get_db():
     finally:
         db.close()
 
-# --- Rutas Públicas (para Clientes y Admin) ---
+# --- Rutas Publicas (para Clientes y Admin) ---
 
 @router.get("", response_model=List[Supplier])
 def list_suppliers(db: Session = Depends(get_db)):
@@ -92,7 +92,6 @@ def delete_supplier(
     if not supplier:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
-   
     products_with_supplier = db.query(ProductDB).filter(ProductDB.supplier_id == supplier_id).count()
     if products_with_supplier > 0:
         raise HTTPException(
@@ -103,3 +102,4 @@ def delete_supplier(
     db.delete(supplier)
     db.commit()
     return None
+

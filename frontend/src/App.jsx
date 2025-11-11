@@ -92,6 +92,20 @@ function App() {
     }
   }, [search, sort, order, page, loggedIn]);
 
+  // Auto-ocultar errores globales después de unos segundos
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 4000);
+    return () => clearTimeout(t);
+  }, [error]);
+
+  // Auto-ocultar éxitos globales después de unos segundos
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(null), 3000);
+    return () => clearTimeout(t);
+  }, [success]);
+
   // --- CRUD Productos ---
   const handleProductSubmit = async (e) => {
     e.preventDefault();
@@ -377,8 +391,32 @@ function App() {
       </header>
 
       {/* Mensajes globales */}
-      {error && <div className="error global-error">{error}</div>}
-      {success && <div className="success global-success">{success}</div>}
+      {error && (
+        <div
+          className="popup-overlay"
+          role="alertdialog"
+          aria-live="assertive"
+          onClick={() => setError(null)}
+        >
+          <div className="popup popup-error" onClick={(e) => e.stopPropagation()}>
+            <h3>Error</h3>
+            <p>{error}</p>
+          </div>
+        </div>
+      )}
+      {success && (
+        <div
+          className="popup-overlay"
+          role="status"
+          aria-live="polite"
+          onClick={() => setSuccess(null)}
+        >
+          <div className="popup popup-success" onClick={(e) => e.stopPropagation()}>
+            <h3>Éxito</h3>
+            <p>{success}</p>
+          </div>
+        </div>
+      )}
 
       {/* ESTADÍSTICAS */}
       <div className="stats-grid">

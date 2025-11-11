@@ -6,15 +6,16 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.db import UserDB
+from app.core.config import settings
 
-SECRET_KEY = "supersecreto123"  
-ALGORITHM = "HS256"
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 
-# Dependencia para obtener sesión
+# Dependencia para obtener sesion
 def get_db():
     db = SessionLocal()
     try:
@@ -26,13 +27,18 @@ def get_db():
 # Crear usuario (para inicializar el admin si no existe)
 def create_admin_user(db: Session):
     admin = db.query(UserDB).filter(UserDB.username == "admin").first()
+    hashed_pw = pwd_context.hash("1234")
     if not admin:
-        hashed_pw = pwd_context.hash("1234")
         new_admin = UserDB(username="admin", hashed_password=hashed_pw)
         db.add(new_admin)
         db.commit()
         db.refresh(new_admin)
         print("Usuario admin creado (admin / 1234)")
+    else:
+        # Asegura credenciales conocidas para pruebas/local
+        if not verify_password("1234", admin.hashed_password):
+            admin.hashed_password = hashed_pw # type: ignore
+            db.commit()
 
 
 def verify_password(plain_password, hashed_password):
@@ -53,7 +59,7 @@ def authenticate_user(db: Session, username: str, password: str):
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token inválido o expirado",
+        detail="Token invalido o expirado",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:

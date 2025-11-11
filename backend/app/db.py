@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from app.core.config import settings
 
 # ---------------------------------------------------------------
-# Configuración de la base de datos SQLite
-DATABASE_URL = "sqlite:///./products.db"
+# Configuracion de la base de datos SQLite
+DATABASE_URL = settings.DATABASE_URL
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -56,7 +57,7 @@ class UserDB(Base):
     hashed_password = Column(String, nullable=False)
 
 # ---------------------------------------------------------------
-# FUNCIONES DE INICIALIZACIÓN
+# FUNCIONES DE INICIALIZACION
 
 def init_db():
     """Crea las tablas si no existen."""
@@ -64,13 +65,13 @@ def init_db():
 
 
 def seed_data():
-    """Inserta datos de ejemplo solo si la base está vacía."""
+    """Inserta datos de ejemplo solo si la base esta vacia."""
     db = SessionLocal()
     try:
-        # Semillas de categorías
+        # Semillas de categorias
         if db.query(CategoryDB).count() == 0:
             categorias = [
-                CategoryDB(name="Lácteos"),
+                CategoryDB(name="Lacteos"),
                 CategoryDB(name="Embutidos"),
                 CategoryDB(name="Abarrotes"),
                 CategoryDB(name="Bebidas"),
@@ -87,7 +88,7 @@ def seed_data():
                     email="burbano@salsa.com",
                 ),
                 SupplierDB(
-                    name="Cárnicos del Valle",
+                    name="Carnicos del Valle",
                     phone="3169876543",
                     email="contacto@carnicosvalle.com",
                 ),
@@ -102,6 +103,4 @@ def seed_data():
 
     finally:
         db.close()
-
-
 

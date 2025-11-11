@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 from typing import Optional
 
 
@@ -7,11 +7,11 @@ class SupplierBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
 
-    # --- AÑADIR ESTE VALIDADOR ---
+    # --- ANADIR ESTE VALIDADOR ---
     @field_validator("phone", "email", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
-        """Convierte strings vacíos en None para campos opcionales."""
+        """Convierte strings vacios en None para campos opcionales."""
         if v == "":
             return None
         return v
@@ -28,5 +28,5 @@ class SupplierUpdate(BaseModel):
 class Supplier(SupplierBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+

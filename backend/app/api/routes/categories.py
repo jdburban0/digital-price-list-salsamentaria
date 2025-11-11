@@ -15,18 +15,17 @@ def get_db():
         db.close()
 
 
-
 @router.get("", response_model=List[Category])
 def list_categories(db: Session = Depends(get_db)):
-    """Lista todas las categorías."""
+    """Lista todas las categorias."""
     return db.query(CategoryDB).order_by(CategoryDB.name).all()
 
 @router.get("/{category_id}", response_model=Category)
 def get_category(category_id: int, db: Session = Depends(get_db)):
-    """Obtiene una categoría por su ID."""
+    """Obtiene una categoria por su ID."""
     category = db.query(CategoryDB).filter(CategoryDB.id == category_id).first()
     if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+        raise HTTPException(status_code=404, detail="Categoria no encontrada")
     return category
 
 # --- Rutas Protegidas (Solo Admin) ---
@@ -37,10 +36,10 @@ def create_category(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),  # Requiere token
 ):
-    """Crea una nueva categoría."""
+    """Crea una nueva categoria."""
     existing = db.query(CategoryDB).filter(CategoryDB.name.ilike(payload.name.strip())).first()
     if existing:
-        raise HTTPException(status_code=409, detail="La categoría ya existe")
+        raise HTTPException(status_code=409, detail="La categoria ya existe")
 
     category = CategoryDB(name=payload.name.strip())
     db.add(category)
@@ -55,10 +54,10 @@ def update_category(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user), # Requiere token
 ):
-    """Actualiza una categoría por su ID."""
+    """Actualiza una categoria por su ID."""
     category = db.query(CategoryDB).filter(CategoryDB.id == category_id).first()
     if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+        raise HTTPException(status_code=404, detail="Categoria no encontrada")
 
     if payload.name:
         existing = db.query(CategoryDB).filter(
@@ -66,7 +65,7 @@ def update_category(
             CategoryDB.id != category_id
         ).first()
         if existing:
-            raise HTTPException(status_code=409, detail="Ya existe otra categoría con ese nombre")
+            raise HTTPException(status_code=409, detail="Ya existe otra categoria con ese nombre")
         category.name = payload.name.strip() # type: ignore
 
     db.commit()
@@ -79,17 +78,16 @@ def delete_category(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user), # Requiere token
 ):
-    """Elimina una categoría por su ID."""
+    """Elimina una categoria por su ID."""
     category = db.query(CategoryDB).filter(CategoryDB.id == category_id).first()
     if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-
+        raise HTTPException(status_code=404, detail="Categoria no encontrada")
 
     products_in_category = db.query(ProductDB).filter(ProductDB.categoria_id == category_id).count()
     if products_in_category > 0:
         raise HTTPException(
             status_code=400,
-            detail=f"No se puede eliminar la categoría, tiene {products_in_category} productos asociados."
+            detail=f"No se puede eliminar la categoria, tiene {products_in_category} productos asociados."
         )
 
     db.delete(category)

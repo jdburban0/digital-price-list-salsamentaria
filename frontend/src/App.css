@@ -116,6 +116,48 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
 }
 
+/* Mejorar legibilidad de errores en modo oscuro */
+[data-theme="dark"] .error,
+[data-theme="dark"] .form-error {
+  color: #ffffff;
+  background: var(--error-600);
+  border-color: var(--error-600);
+}
+
+/* Dark theme accessibility overrides */
+[data-theme="dark"] .public-link {
+  background: var(--primary-600);
+  color: #ffffff;
+  border-color: var(--primary-700);
+}
+
+[data-theme="dark"] .public-link:hover {
+  background: var(--primary-700);
+  border-color: var(--primary-700);
+}
+
+[data-theme="dark"] .edit-btn {
+  background: var(--bg-secondary);
+  color: #ffffff;
+  border-color: var(--primary-600);
+}
+
+[data-theme="dark"] .edit-btn:hover {
+  background: var(--primary-600);
+  color: #ffffff;
+  border-color: var(--primary-700);
+}
+
+[data-theme="dark"] .header .subtitle {
+  background: var(--primary-600);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .badge-primary {
+  background: var(--primary-600);
+  color: #ffffff;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -985,6 +1027,55 @@ form button[type="submit"] {
   font-size: 1.5rem;
   font-weight: 700;
   color: white;
+}
+
+/* =============================
+   POP-UP DE MENSAJES CENTRADO
+   ============================= */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.popup {
+  max-width: 560px;
+  width: calc(100% - 2rem);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: 1.25rem 1.25rem;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.popup-error {
+  background: var(--error-600);
+  color: #ffffff;
+  border-color: var(--error-600);
+}
+
+.popup-success {
+  background: var(--success-600);
+  color: #ffffff;
+  border-color: var(--success-600);
+}
+
+.popup h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.popup p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 /* ==========================================

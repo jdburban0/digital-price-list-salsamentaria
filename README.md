@@ -469,3 +469,47 @@ Razón: Simplicidad para MVP, sin dependencias pesadas.
 ## Estrategia de Estado en Frontend:
 
 Uso de useState y useEffect para manejar productos, búsqueda, y estados (carga/error) localmente. No se usan librerías adicionales (e.g., Redux) para mantener el código ligero.
+
+## Endpoints principales
+
+- Auth
+  - POST `/login` (form `username`, `password`) ? JWT; rate limited
+  - POST `/register` (JSON: `username`, `email`, `password`, `invite_code`)
+- Products
+  - GET `/products` (paginado: `q`, `offset`, `limit`, `sort`, `order`) [publico]
+  - GET `/products/{id}` [publico]
+  - POST `/products` [privado]
+  - PUT `/products/{id}` [privado]
+  - DELETE `/products/{id}` [privado]
+- Categories
+  - GET `/categories` [publico]
+  - GET `/categories/{id}` [publico]
+  - POST `/categories` [privado]
+  - PUT `/categories/{id}` [privado]
+  - DELETE `/categories/{id}` [privado]
+- Suppliers
+  - GET `/suppliers` [publico]
+  - GET `/suppliers/{id}` [publico]
+  - POST `/suppliers` [privado]
+  - PUT `/suppliers/{id}` [privado]
+  - DELETE `/suppliers/{id}` [privado]
+
+Notas
+- En endpoints privados enviar `Authorization: Bearer <token>`.
+- Respuestas de listado incluyen header `X-Total-Count`.
+
+## Variables de entorno (.env)
+
+Copiar `.env.example` a `.env` en la raiz y ajustar:
+- `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
+- `RATE_LIMIT_MAX_ATTEMPTS`, `RATE_LIMIT_WINDOW_SECONDS`
+- `INVITE_CODE`
+- `DATABASE_URL`
+- `ALLOWED_ORIGINS` (separadas por coma)
+
+Frontend: crear `frontend/.env.development` con `VITE_API_URL=http://127.0.0.1:8000`.
+- Auth
+  - GET `/login/me` (requiere Bearer) ? datos del usuario
+
+Seguridad
+- Rate limiting activo en `/login` y `/register` (configurable por .env).
