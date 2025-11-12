@@ -1,515 +1,436 @@
-# Salsamentaría Burbano — Digital Price List (MVP Semana 11)
+# Salsamentaría Burbano — Digital Price List
+
+## Descripción del Proyecto
+
+Aplicación web full-stack para la gestión digital de precios en pequeños negocios. Permite al propietario administrar productos, categorías y proveedores desde cualquier dispositivo, eliminando la necesidad de imprimir listas de precios constantemente.
+
+**Características principales:**
+- Sistema de autenticación con JWT
+- CRUD completo de productos, categorías y proveedores
+- Lista pública de precios actualizada en tiempo real
+- Rate limiting para seguridad
+- Interfaz responsive con tema claro/oscuro
+- Base de datos SQLite con SQLAlchemy
+
 ## Elevator Pitch
 
-En una salsamentaria tradicional, el propietario debe imprimir listas de precios constantemente para mantenerlas actualizadas, lo que genera desperdicio de papel, tiempo y errores manuales.
-Esta aplicación web permite al propietario gestionar precios de productos en tiempo real, desde PC o celular, con un login seguro y una interfaz moderna.
+En una salsamentaria tradicional, el propietario debe imprimir listas de precios constantemente para mantenerlas actualizadas, lo que genera desperdicio de papel, tiempo y errores manuales. Esta aplicación web permite al propietario gestionar precios de productos en tiempo real, desde PC o celular, con un login seguro y una interfaz moderna.
 
 Dirigida a pequeños negocios como salsamentarias, reduce costos y mejora la eficiencia operativa, permitiendo actualizar precios fácilmente y que los clientes consulten la lista actualizada.
 
+## Usuarios
 
-## Usuario Principal (Propietario/Administrador): 
-* Crear, editar y eliminar productos.
+### Usuario Principal (Propietario/Administrador)
+* Crear, editar y eliminar productos
+* Iniciar sesión (login protegido con JWT)
+* Gestionar categorías y proveedores
 
-* Iniciar sesión (login protegido con JWT).
+### Usuario Secundario (Cliente)
+* Consultar la lista pública de precios
+* Buscar y filtrar productos sin autenticación
 
-* Gestionar categorías y proveedores.Dueño de la salsamentaria (ej. la tía del usuario). Casos de uso: Crear/actualizar/eliminar productos con precios, buscar productos, ordenar lista por nombre o precio.
+## Objetivos y No-Objetivos
 
-## Usuario Secundario (Cliente): 
-* Consultar la lista pública de precios.
+### Objetivos
+* Implementar un MVP funcional con CRUD completo de productos, categorías y proveedores
+* Añadir autenticación JWT, protección de rutas y rate limiting
+* Integrar SQLite como base de datos persistente
+* Proporcionar una interfaz clara y responsive
 
-* Buscar y filtrar productos sin autenticación.
+### No-Objetivos (explícitamente no se hizo en MVP)
+* No se implementan roles múltiples ni multiusuario avanzado
+* No se incluyen reportes PDF o notificaciones
+* No se implementa despliegue en la nube (solo entorno local)
 
-# Objetivos y No-Objetivos
+## Métricas/KPIs de Éxito
 
-## Objetivos:
+* CRUD y autenticación responden en menos de 500ms
+* UI carga productos en menos de 2 segundos
+* Flujo completo: login → CRUD → logout funcional
+* Manejo de errores controlado (401, 404, 409, 422, 429)
+* Éxito: El dueño actualiza precios en menos de 1 minuto sin errores
 
-* Implementar un MVP funcional con CRUD completo de productos, categorías y proveedores.
+## Historias de Usuario
 
-* Añadir autenticación JWT, protección de rutas y rate limiting.
+### Historia 1: Agregar Producto (Must - MVP)
+**Como** dueño, **quiero** agregar un nuevo producto **para** mantener el catálogo actualizado.
 
-* Integrar SQLite como base de datos persistente.
+**Criterios de Aceptación:**
+- Dado un formulario con nombre, precio, categoría y proveedor, cuando ingreso datos válidos (ej., "Queso Campesino", 12000, "Lácteos", "Burbano Family"), entonces se crea el producto y aparece en la lista.
+- Dado un formulario con campos vacíos, cuando intento enviar, no dejará enviarlo por no completar el formulario.
+- Dado un nombre duplicado, cuando intento enviar, entonces recibo un error 409.
 
-* Proporcionar una interfaz clara y responsive.
+### Historia 2: Consultar Productos (Must - MVP)
+**Como** dueño o cliente, **quiero** ver la lista de productos **para** conocer los precios disponibles.
 
+**Criterios de Aceptación:**
+- Dado que la API devuelve productos, cuando cargo la página, entonces se muestra la lista con nombre, precio, categoría y proveedor.
+- Dado que no hay productos, cuando cargo la página, entonces se muestra un mensaje "No hay productos".
 
-## No-Objetivos (explícitamente no se hará en MVP):
+### Historia 3: Buscar Productos (Should - MVP)
+**Como** dueño y cliente, **quiero** buscar productos por nombre **para** encontrar algo específico rápidamente.
 
-* No se implementan roles múltiples ni multiusuario.
+**Criterios de Aceptación:**
+- Dado un campo de búsqueda, cuando ingreso "Queso" con debounce de 400ms, entonces se filtra la lista con coincidencias.
+- Dado un término no encontrado, cuando busco, entonces se muestra "No se encontraron productos".
 
-* No se incluyen reportes PDF o notificaciones.
+### Historia 4: Eliminar Producto (Should - MVP)
+**Como** dueño, **quiero** eliminar un producto **para** quitar ítems obsoletos del catálogo.
 
-* No se implementa despliegue en la nube (solo entorno local).
+**Criterios de Aceptación:**
+- Dado un producto en la lista, cuando hago clic en eliminar y confirmo, entonces se borra y desaparece de la UI.
+- Dado un ID inválido, cuando intento eliminar, entonces recibo un error 404.
 
+### Historia 5: Ordenar Productos (Could - MVP)
+**Como** dueño, **quiero** ordenar productos por precio, nombre o categoría **para** organizar el catálogo.
 
+**Criterios de Aceptación:**
+- Dado un control de ordenamiento, cuando selecciono "precio ascendente", entonces la lista se ordena de menor a mayor.
 
-## Métricas/KPIs de Successo
+### Historia 6: Login Administrador (Must - MVP)
+**Como** dueño, **quiero** iniciar sesión **para** proteger las acciones de administración.
 
-* CRUD y autenticación responden en menos de 500ms.
+**Criterios de Aceptación:**
+- Dado un formulario de login, cuando ingreso credenciales válidas, entonces accedo al panel de administración.
 
-* UI carga productos en menos de 2 segundos.
+## Roadmap
 
-* Flujo completo: login → CRUD → logout funcional.
+### Semana 6 (Completada - Entregable 1) ✅
+- Vertical slice con entidad Producto (CRUD completo: POST, GET, PUT, DELETE)
+- Búsqueda con debounce (400ms) en la UI
+- Estados de carga y error en el frontend
+- Prueba backend mínima pasando (crear producto)
+- Documentación inicial (README, ERD, API design)
 
-* Manejo de errores controlado (401, 404, 409, 422, 429).
+### Semana 7 ✅
+- Mejorar estilos en App.css (responsividad, consistencia visual)
+- Añadir validaciones frontend (mostrar errores antes de enviar)
+- Configurar SQLite como base de datos
+- Crear migraciones iniciales para la tabla Producto
 
-* Éxito: El dueño actualiza precios en menos de 1 minuto sin errores.
+### Semana 8 ✅
+- Implementar conexión a SQLite en el backend (SQLAlchemy)
+- Migrar lógica de CRUD a usar la base de datos
+- Añadir pruebas backend para GET, PUT, y DELETE
+- Actualizar documentación (ERD con base de datos)
 
-# Instrucciones para Ejecutar Backend y Frontend
+### Semana 9 ✅
+- Implementar paginación en la UI (offset y limit)
+- Añadir ordenamiento por categoría en el backend
+- Optimizar búsqueda
+- Refinar manejo de errores (404, 422, 409)
 
-Requisitos Previos
+### Semana 10 ✅
+- Configurar autenticación JWT
+- Implementar login para administrador
+- Proteger endpoints CRUD (POST, PUT, DELETE) con autenticación
+- Añadir feedback visual al crear/eliminar productos
 
-Instalar uv (gestor de paquetes Python): Sigue las instrucciones en la sección 7.1 del documento de asignatura.
-Node.js y npm para frontend.
+### Semana 11 (Entregable 2 - MVP Funcional) ✅
+- Integrar todas las funcionalidades: CRUD, búsqueda, paginación, ordenamiento, autenticación
+- Añadir gestión de Categorías y Proveedores
+- Implementar validaciones de integridad referencial
+- Implementar rate limiting
+- Crear lista pública de productos
+- Preparar demo y documentación final
 
-Backend (FastAPI)
+## Tecnologías Utilizadas
 
+**Backend:**
+- FastAPI 0.115.0
+- SQLAlchemy (ORM)
+- Python-jose (JWT)
+- Passlib (bcrypt para contraseñas)
+- Pydantic (validaciones)
+
+**Frontend:**
+- React 19.1.1
+- React Router DOM 7.9.4
+- Vite 7.1.2
+- CSS moderno con variables
+
+**Base de Datos:**
+- SQLite (desarrollo local)
+
+## Estructura del Proyecto
+```
+.
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── routes/
+│   │   │       ├── products.py
+│   │   │       ├── categories.py
+│   │   │       └── suppliers.py
+│   │   ├── auth/
+│   │   │   ├── auth.py
+│   │   │   ├── dependencies.py
+│   │   │   └── register.py
+│   │   ├── core/
+│   │   │   └── config.py
+│   │   ├── models/
+│   │   │   ├── product.py
+│   │   │   ├── category.py
+│   │   │   └── supplier.py
+│   │   ├── db.py
+│   │   └── main.py
+│   ├── tests/
+│   │   └── test_api.py
+│   ├── requirements.txt
+│   └── pytest.ini
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── LoginForm.jsx
+│   │   │   ├── RegisterForm.jsx
+│   │   │   ├── PublicList.jsx
+│   │   │   └── ThemeToggle.jsx
+│   │   ├── utils/
+│   │   │   └── auth.js
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+## Instalación y Ejecución
+
+### Requisitos Previos
+
+- Python 3.10+
+- Node.js 18+
+- uv (gestor de paquetes Python): https://github.com/astral-sh/uv
+
+### Backend (FastAPI)
+```bash
+# 1. Navegar a la carpeta backend
 cd backend
+
+# 2. Crear y activar entorno virtual
 uv venv .venv
-Activar venv:
 
-macOS/Linux: source .venv/bin/activate
-Windows: .venv\Scripts\Activate.ps1
+# En macOS/Linux:
+source .venv/bin/activate
 
+# En Windows:
+.venv\Scripts\Activate.ps1
 
+# 3. Instalar dependencias
 uv pip install -r requirements.txt
+
+# 4. Crear archivo .env en la raíz del proyecto
+# (copiar desde .env.example y ajustar valores)
+
+# 5. Ejecutar servidor
 uv run uvicorn app.main:app --reload --port 8000
 
-Accede a Swagger UI: http://127.0.0.1:8000/docs
-
-
-
-Frontend (React + Vite)
-
-1. cd frontend
-2. npm install
-3. Crear/editar .env.development con: VITE_API_URL=http://127.0.0.1:8000
-4. npm run dev
-
-* Accede a la app: http://localhost:5173
-
-
-
-Variables de Entorno y Puertos
-
-* Backend: Puerto 8000 (configurable en uvicorn).
-* Frontend: Puerto 5173 (predeterminado de Vite).
-* VITE_API_URL: URL base de la API (ej. http://127.0.0.1:8000).
-
-# Roadmap:
-
-## Semana 6 (Completada - Entregable 1)
-
-## Realizado:
-
-Vertical slice con entidad Producto (CRUD completo: POST, GET, PUT, DELETE).
-Búsqueda con debounce (300ms) en la UI.
-Estados de carga y error en el frontend.
-Prueba backend mínima pasando (crear producto).
-Documentación inicial (README, ERD, API design).
-
-
-## Semana 7
-
-## Reañozado 
-
-Objetivo: Refinar la UI y preparar la transición a base de datos.
-Tareas:
-
-Mejorar estilos en App.css (responsividad, consistencia visual).
-Añadir validaciones frontend (e.j., mostrar errores de categoria vacía antes de enviar).
-Investigar y configurar SQLite como base de datos (reemplazar _db in-memory en products.py).
-Crear migraciones iniciales para la tabla Producto (nombre, precio, categoria).
-
-
-Deliverable: Commit con UI mejorada y esquema de base de datos básico.
-
-## Semana 8
-
-## Realizado
-
-Objetivo: Integrar base de datos y pruebas adicionales.
-Tareas:
-
-Implementar conexión a SQLite en el backend (usar SQLAlchemy o una librería ligera como aiosqlite).
-Migrar lógica de CRUD a usar la base de datos (reemplazar _db).
-Añadir pruebas backend para GET /products, PUT /products/{id}, y DELETE /products/{id}.
-Actualizar documentación (ERD con base de datos, instrucciones de instalación con SQLite).
-
-
-Deliverable: Backend funcionando con SQLite, al menos 4 pruebas pasando.
-
-## Semana 9
-
-## Realizado
-
-Objetivo: Añadir funcionalidad de paginación y ordenamiento avanzado.
-Tareas:
-
-Implementar paginación en la UI (mostrar "Siguiente" y "Anterior" con offset y limit).
-Añadir ordenamiento por categoria en el backend (sort=categoria).
-Optimizar búsqueda con índices en la base de datos (si es necesario).
-Refinar manejo de errores (e.g., mensajes personalizados para 404, 422).
-
-
-Deliverable: UI con paginación y ordenamiento por categoría, commit con optimizaciones.
-
-## Semana 10
-
-## Realizado
-
-Objetivo: Preparar autenticación básica y mejorar la experiencia del usuario.
-Tareas:
-
-Investigar y configurar autenticación (e.g., JWT con fastapi-users o una solución simple).
-Implementar login para administrador (ruta /login con usuario/contraseña hardcoded o en base de datos).
-Proteger endpoints CRUD (POST, PUT, DELETE) con autenticación (solo admin).
-Añadir feedback visual al crear/eliminar productos (e.g., notificación de éxito).
-
-
-Deliverable: Login funcional para admin, endpoints protegidos, commit con UI feedback.
-
-## Semana 11 (Entregable 2 - MVP Funcional)
-
-## Realizado
-
-Objetivo: Entregar un MVP completo para la dueña.
-Tareas:
-
-Integrar todas las funcionalidades: CRUD, búsqueda, paginación, ordenamiento, autenticación.
-Documentar instrucciones detalladas para la dueña (cómo usar login, agregar productos).
-Preparar screenshots y video demo para el entregable.
-
-
-Deliverable: Repositorio con MVP funcional, demo exitosa con la dueña, entrega antes de la fecha límite.
-
-## Semana 12
-
-Objetivo: Añadir filtros avanzados y mejorar seguridad.
-Tareas:
-
-Implementar filtros en la UI (e.g., dropdown para filtrar por categoria).
-Añadir validación de roles (solo admin puede acceder a ciertas rutas).
-Optimizar consultas a la base de datos (e.g., índices para categoria).
-Refactorizar código backend para mayor modularidad.
-
-
-Deliverable: Filtros por categoría, commit con mejoras de seguridad.
-
-## Semana 13
-
-Objetivo: Mejorar la experiencia del administrador.
-Tareas:
-
-Añadir edición de productos (formulario para PUT /products/{id}).
-Implementar logout para el administrador.
-Añadir historial de cambios (e.g., log básico de creaciones/eliminaciones).
-Probar estabilidad con múltiples operaciones.
-
-
-Deliverable: Edición de productos, logout, commit con historial básico.
-
-## Semana 14
-
-Objetivo: Preparar despliegue y escalabilidad.
-Tareas:
-
-Configurar despliegue local (e.g., Docker o un archivo requirements.txt completo).
-Migrar a PostgreSQL (opcional, si SQLite es insuficiente).
-Añadir documentación de despliegue (instrucciones para hosting).
-Probar rendimiento con 100+ productos.
-
-
-Deliverable: Configuración de despliegue, commit con migración a PostgreSQL (si aplica).
-
-## Semana 15
-
-Objetivo: Pulir UI y preparar presentación.
-Tareas:
-
-Añadir temas oscuros/claros (toggle en la UI).
-Mejorar accesibilidad (e.g., etiquetas ARIA, contraste).
-Grabar video final con todas las funcionalidades.
-Revisar y actualizar README completo.
-
-
-Deliverable: UI pulida, video final, commit con accesibilidad.
-
-## Semana 16 (Final)
-
-Objetivo: Entrega final y presentación.
-Tareas:
-
-Realizar presentación al docente Jack.
-Subir repositorio final con todos los commits.
-Recolectar feedback y documentar lecciones aprendidas.
-Celebrar el éxito del proyecto!
-
-
-Deliverable: Repositorio final, presentación exitosa, informe de lecciones aprendidas.
-
-# Historias de Usuario
-
-## Historia 1: Agregar Producto (Must - MVP)
-
-Como dueño, quiero agregar un nuevo producto para mantener el catálogo actualizado.
-Criterios de Aceptación:
-
-Dado un formulario con nombre, precio y categoría, cuando ingreso datos válidos (ej., "Queso Campesino", 12000, "Lácteos"), entonces se crea el producto y aparece en la lista.
-Dado un formulario con categoría vacía, cuando intento enviar, no dejará enviarlo por no completar el formulario.
-Dado un nombre duplicado, cuando intento enviar, entonces recibo un error 409.
-
-
-
-## Historia 2: Consultar Productos (Must - MVP)
-
-Como dueño o cliente, quiero ver la lista de productos para conocer los precios disponibles.
-Criterios de Aceptación:
-
-Dado que la API devuelve productos, cuando cargo la página, entonces se muestra la lista con nombre, precio y categoría.
-Dado que no hay productos, cuando cargo la página, entonces se muestra un mensaje "No hay productos".
-
-
-
-## Historia 3: Buscar Productos (Should - MVP)
-
-Como dueño y cliente, quiero buscar productos por nombre para encontrar algo específico rápidamente.
-Criterios de Aceptación:
-
-Dado un campo de búsqueda, cuando ingreso "Queso" con debounce de 300ms, entonces se filtra la lista con coincidencias.
-Dado un término no encontrado, cuando busco, entonces se muestra "No se encontraron productos".
-
-
-
-## Historia 4: Eliminar Producto (Should - MVP)
-
-Como dueño, quiero eliminar un producto para quitar ítems obsoletos del catálogo.
-Criterios de Aceptación:
-
-Dado un producto en la lista, cuando hago clic en eliminar y confirmo, entonces se borra y desaparece de la UI.
-Dado un ID inválido, cuando intento eliminar, entonces recibo un error 404.
-
-
-
-## Historia 5: Ordenar Productos (Could - MVP)
-
-Como dueño, quiero ordenar productos por precio o nombre para organizar el catálogo.
-Criterios de Aceptación:
-
-Dado un botón de ordenamiento, cuando selecciono "precio ascendente", entonces la lista se ordena de menor a mayor.
-
-
-
-## Historia 6: Login Administrador (Won’t - PostMVP)
-
-Como dueño, quiero iniciar sesión para proteger las acciones de administración.
-Criterios de Aceptación:
-
-Dado un formulario de login, cuando ingreso credenciales válidas, entonces accedo a CRUD.
-
-# Base de Datos (SQLite + SQLAlchemy)
-
-# Entidades implementadas:
-
-| Entidad  | Campos Principales                         | Relaciones                 |
-| -------- | ------------------------------------------ | -------------------------- |
-| User     | id, username, email, hashed_password       | 1:N productos creados      |
-| Category | id, name                                   | 1:N productos              |
-| Supplier | id, name, phone, email                     | 1:N productos              |
-| Product  | id, name, price, categoria_id, supplier_id | FK a categoría y proveedor |
-
-
-# MER
-
-``` sql 
-Table users {
-  id integer [pk]
-  username varchar
-  email varchar
-  hashed_password varchar
-}
-
-Table categories {
-  id integer [pk]
-  name varchar
-}
-
-Table suppliers {
-  id integer [pk]
-  name varchar
-  phone varchar
-  email varchar
-}
-
-Table products {
-  id integer [pk]
-  name varchar
-  price float
-  categoria_id integer [ref: > categories.id]
-  supplier_id integer [ref: > suppliers.id]
-}
-+-------------+
+# Backend disponible en: http://127.0.0.1:8000
+# Documentación API: http://127.0.0.1:8000/docs
 ```
-# Endpoints Principales
 
-| Método | Ruta           | Descripción                                    |
-| ------ | -------------- | ---------------------------------------------- |
-| POST   | /register      | Crear nuevo usuario                            |
-| POST   | /login         | Autenticación (retorna JWT)                    |
-| GET    | /me            | Datos del usuario autenticado                  |
-| GET    | /products      | Listar productos (paginación, búsqueda, orden) |
-| POST   | /products      | Crear producto (requiere JWT)                  |
-| PUT    | /products/{id} | Editar producto                                |
-| DELETE | /products/{id} | Eliminar producto                              |
-| GET    | /health        | Estado de la API (OK)                          |
+### Frontend (React + Vite)
+```bash
+# 1. Navegar a la carpeta frontend
+cd frontend
 
-# Ejemplo de Login
+# 2. Instalar dependencias
+npm install
 
-# Request:
+# 3. Crear archivo .env.development con:
+echo "VITE_API_URL=http://127.0.0.1:8000" > .env.development
 
-```json
-POST /login
-{
-  "username": "adminBurbano",
-  "password": "Burba12"
-}
+# 4. Ejecutar servidor de desarrollo
+npm run dev
+
+# Frontend disponible en: http://localhost:5173
 ```
+
+### Ejecutar Tests
+```bash
+cd backend
+source .venv/bin/activate 
+uv run pytest -v
+```
+
+## Variables de Entorno
+
+**Backend (.env en raíz del proyecto):**
+```env
+# Seguridad
+SECRET_KEY=tu_clave_secreta_super_segura_aqui
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
 # Rate Limiting
+RATE_LIMIT_MAX_ATTEMPTS=5
+RATE_LIMIT_WINDOW_SECONDS=60
 
-/login: Máximo 5 solicitudes/minuto por IP.
+# Registro
+INVITE_CODE=BUrBAN02o25
 
-APIs autenticadas: Máximo 60 solicitudes/minuto por token/IP.
+# Base de Datos
+DATABASE_URL=sqlite:///./products.db
 
-Si se excede:
-HTTP 429 → {"detail": "Demasiadas solicitudes. Intenta más tarde."}
-
-# Esquema Pydantic:
-
-```python
-from pydantic import BaseModel, Field
-
-class ProductBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    price: float = Field(..., ge=0)
-    categoria: str = Field(..., min_length=1, max_length=50)
-
-class ProductCreate(ProductBase):
-    pass
-
-class ProductUpdate(ProductBase):
-    name: str | None = Field(None, min_length=1, max_length=100)
-    price: float | None = Field(None, ge=0)
-    categoria: str | None = Field(None, min_length=1, max_length=50)
-
-class Product(ProductBase):
-    id: int
-
-    class Config:
-        from_attributes = True
+# CORS
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-
-# Ejemplos JSON:
-
-* POST /products (Request):
-```json
-
-{
-  "name": "Queso Campesino",
-  "price": 12000.0,
-  "categoria": "Lácteos"
-}
+**Frontend (.env.development en frontend/):**
+```env
+VITE_API_URL=http://127.0.0.1:8000
 ```
-* POST /products (Response 201):
 
-```json
-{
-  "id": 1,
-  "name": "Queso Campesino",
-  "price": 12000.0,
-  "categoria": "Lácteos"
-}
+## Endpoints Principales
+
+### Autenticación (Públicos)
+
+| Método | Ruta | Descripción | Body |
+|--------|------|-------------|------|
+| POST | `/login` | Autenticación con JWT | `username`, `password` (form) |
+| POST | `/register` | Crear nuevo usuario | `username`, `email`, `password`, `invite_code` |
+| GET | `/login/me` | Datos del usuario autenticado | Header: `Authorization: Bearer <token>` |
+
+### Productos
+
+| Método | Ruta | Público | Descripción |
+|--------|------|---------|-------------|
+| GET | `/products` | ✅ | Listar productos (búsqueda, paginación, orden) |
+| GET | `/products/{id}` | ✅ | Obtener producto por ID |
+| POST | `/products` | ❌ | Crear nuevo producto |
+| PUT | `/products/{id}` | ❌ | Actualizar producto |
+| DELETE | `/products/{id}` | ❌ | Eliminar producto |
+
+**Parámetros de búsqueda (GET /products):**
+- `q`: búsqueda por nombre
+- `sort`: ordenar por `name`, `price`, o `categoria`
+- `order`: `asc` o `desc`
+- `offset`: paginación (inicio)
+- `limit`: cantidad de resultados (1-100)
+
+### Categorías
+
+| Método | Ruta | Público | Descripción |
+|--------|------|---------|-------------|
+| GET | `/categories` | ✅ | Listar categorías |
+| GET | `/categories/{id}` | ✅ | Obtener categoría por ID |
+| POST | `/categories` | ❌ | Crear categoría |
+| PUT | `/categories/{id}` | ❌ | Actualizar categoría |
+| DELETE | `/categories/{id}` | ❌ | Eliminar categoría |
+
+### Proveedores
+
+| Método | Ruta | Público | Descripción |
+|--------|------|---------|-------------|
+| GET | `/suppliers` | ✅ | Listar proveedores |
+| GET | `/suppliers/{id}` | ✅ | Obtener proveedor por ID |
+| POST | `/suppliers` | ❌ | Crear proveedor |
+| PUT | `/suppliers/{id}` | ❌ | Actualizar proveedor |
+| DELETE | `/suppliers/{id}` | ❌ | Eliminar proveedor |
+
+**Nota:** Los endpoints privados (❌) requieren header `Authorization: Bearer <token>`
+
+## Modelo de Datos
+
+### Entidades y Relaciones
 ```
-* GET /products (Response 200):
-```json
-[
-  {
-    "id": 1,
-    "name": "Queso Campesino",
-    "price": 12000.0,
-    "categoria": "Lácteos"
-  }
-]
+User (1) ────── (N) [creador de productos]
+                       
+Category (1) ── (N) Product (N) ── (1) Supplier
 ```
-# Sección de Arquitectura (Diagrama, Librerías, Estado, Errores)
-+----------------+         +----------------+
-|    Frontend    |         |    Backend     |
-| (React + Vite) | <-----> | (FastAPI)      |
-| - App.jsx      |  CORS   | - main.py      |
-| - api.js       |         | - products.py  |
-+----------------+         +----------------+
-VITE_API_URL: http://127.0.0.1:8000
 
-# Manejo de errores
+**User:**
+- id (int, PK)
+- username (str, unique)
+- email (str, unique)
+- hashed_password (str)
 
-| Código | Descripción               | Ejemplo                                   |
-| ------ | ------------------------- | ----------------------------------------- |
-| 401    | Token inválido o expirado | {"detail": "Token inválido"}              |
-| 404    | Recurso no encontrado     | {"detail": "Producto no encontrado"}      |
-| 409    | Duplicado / conflicto     | {"detail": "Nombre ya existe"}            |
-| 422    | Datos inválidos           | {"detail": "Datos faltantes o inválidos"} |
+**Category:**
+- id (int, PK)
+- name (str, unique)
 
+**Supplier:**
+- id (int, PK)
+- name (str, unique)
+- phone (str, nullable)
+- email (str, nullable)
 
-## Librerías Clave y Justificación:
+**Product:**
+- id (int, PK)
+- name (str, unique)
+- price (float)
+- categoria_id (int, FK → categories.id)
+- supplier_id (int, FK → suppliers.id)
 
-Frontend: React + Vite (rápido desarrollo, UI reactiva), Tailwind CSS (estilos consistentes).
-Backend: FastAPI (API rápida con validaciones), Pydantic (esquemas robustos), httpx (pruebas).
-Razón: Simplicidad para MVP, sin dependencias pesadas.
+## Características de Seguridad
 
+1. **JWT Authentication:** Tokens con expiración de 60 minutos
+2. **Rate Limiting:** 
+   - Login: máximo 5 intentos por minuto por IP
+   - Registro: máximo 5 intentos por minuto por IP
+3. **Código de Invitación:** Registro controlado (código: `BUrBAN02o25`)
+4. **Password Hashing:** Bcrypt para almacenamiento seguro
+5. **CORS:** Configurado para localhost en desarrollo
+6. **Validaciones:** Pydantic para validación de datos en backend
 
-## Estrategia de Estado en Frontend:
+## Validaciones Implementadas
 
-Uso de useState y useEffect para manejar productos, búsqueda, y estados (carga/error) localmente. No se usan librerías adicionales (e.g., Redux) para mantener el código ligero.
+- **Productos:**
+  - Nombres únicos (insensible a mayúsculas)
+  - Detección de nombres similares (normalización)
+  - Precio mayor o igual a 0
+  - Categoría y proveedor obligatorios
 
-## Endpoints principales
+- **Categorías:**
+  - Nombres únicos
+  - No se puede eliminar si tiene productos asociados
 
-- Auth
-  - POST `/login` (form `username`, `password`) ? JWT; rate limited
-  - POST `/register` (JSON: `username`, `email`, `password`, `invite_code`)
-- Products
-  - GET `/products` (paginado: `q`, `offset`, `limit`, `sort`, `order`) [publico]
-  - GET `/products/{id}` [publico]
-  - POST `/products` [privado]
-  - PUT `/products/{id}` [privado]
-  - DELETE `/products/{id}` [privado]
-- Categories
-  - GET `/categories` [publico]
-  - GET `/categories/{id}` [publico]
-  - POST `/categories` [privado]
-  - PUT `/categories/{id}` [privado]
-  - DELETE `/categories/{id}` [privado]
-- Suppliers
-  - GET `/suppliers` [publico]
-  - GET `/suppliers/{id}` [publico]
-  - POST `/suppliers` [privado]
-  - PUT `/suppliers/{id}` [privado]
-  - DELETE `/suppliers/{id}` [privado]
+- **Proveedores:**
+  - Nombres únicos
+  - No se puede eliminar si tiene productos asociados
+  - Email opcional con formato válido
 
-Notas
-- En endpoints privados enviar `Authorization: Bearer <token>`.
-- Respuestas de listado incluyen header `X-Total-Count`.
+## Códigos de Estado HTTP
 
-## Variables de entorno (.env)
+- `200 OK`: Solicitud exitosa
+- `201 Created`: Recurso creado exitosamente
+- `204 No Content`: Eliminación exitosa
+- `400 Bad Request`: Error de validación o integridad
+- `401 Unauthorized`: Token inválido o faltante
+- `404 Not Found`: Recurso no encontrado
+- `409 Conflict`: Duplicado (nombre ya existe)
+- `422 Unprocessable Entity`: Datos inválidos
+- `429 Too Many Requests`: Rate limit excedido
 
-Copiar `.env.example` a `.env` en la raiz y ajustar:
-- `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
-- `RATE_LIMIT_MAX_ATTEMPTS`, `RATE_LIMIT_WINDOW_SECONDS`
-- `INVITE_CODE`
-- `DATABASE_URL`
-- `ALLOWED_ORIGINS` (separadas por coma)
+## Uso de la Aplicación
 
-Frontend: crear `frontend/.env.development` con `VITE_API_URL=http://127.0.0.1:8000`.
-- Auth
-  - GET `/login/me` (requiere Bearer) ? datos del usuario
+### Para el Propietario (Admin)
 
-Seguridad
-- Rate limiting activo en `/login` y `/register` (configurable por .env).
+1. Acceder a `/admin`
+2. Iniciar sesión o crear cuenta con código de invitación
+3. Gestionar categorías y proveedores en la sección "Gestión de Catálogo"
+4. Crear productos con nombre, precio, categoría y proveedor
+5. Buscar, ordenar y paginar productos
+6. Editar o eliminar productos existentes
+
+### Para los Clientes (Público)
+
+1. Acceder a `/` (lista pública)
+2. Buscar productos por nombre
+3. Filtrar por categoría
+4. Ordenar por nombre, precio o categoría
+5. Ver información actualizada en tiempo real
+
+## Desarrolladores
+
+- Juan David Burbano y Cristian Fabián Muñoz
+- Universidad: Universidad Autonoma de Occidente
+- Curso: Estructura de datos y algoritmos 2
+- Semestre: 2025-3
+
+## Licencia
+
+Proyecto académico - Uso educativo
