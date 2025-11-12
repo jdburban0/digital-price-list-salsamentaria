@@ -28,7 +28,20 @@ function LoginForm({ API_URL, onLoginSuccess }) {
             });
 
             if (!res.ok) {
-                throw new Error("❌ Credenciales incorrectas");
+                const errBody = await res.clone().json().catch(() => null);
+                const retry = res.headers.get("Retry-After");
+                const detail = errBody?.detail || errBody?.message;
+                let msg = "Credenciales incorrectas";
+                if (res.status === 429) {
+                    msg = detail || `Demasiados intentos. Intenta de nuevo${retry ? ` en ${retry}s` : " mas tarde"}.`;
+                } else if (res.status === 401) {
+                    msg = detail || "Credenciales incorrectas";
+                } else if (res.status === 403) {
+                    msg = detail || "Acceso no permitido";
+                } else {
+                    msg = detail || `Error ${res.status}`;
+                }
+                throw new Error(msg);
             }
 
             const data = await res.json();
@@ -57,14 +70,7 @@ function LoginForm({ API_URL, onLoginSuccess }) {
     return (
         <div className="login-container">
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <div
-                    style={{
-                        fontSize: '3rem',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    🔐
-                </div>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐</div>
                 <h2>Iniciar sesión</h2>
                 <p style={{ color: 'var(--gray-600)', marginTop: '0.5rem' }}>
                     Panel de Administración
@@ -75,7 +81,7 @@ function LoginForm({ API_URL, onLoginSuccess }) {
                 <div>
                     <input
                         type="text"
-                        placeholder="👤 Usuario"
+                        placeholder="Usuario"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
@@ -85,7 +91,7 @@ function LoginForm({ API_URL, onLoginSuccess }) {
                 <div>
                     <input
                         type="password"
-                        placeholder="🔑 Contraseña"
+                        placeholder="Contraseña"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -96,7 +102,7 @@ function LoginForm({ API_URL, onLoginSuccess }) {
                 {error && <div className="error">{error}</div>}
 
                 <button type="submit" disabled={loading}>
-                    {loading ? "⏳ Entrando..." : "🚀 Ingresar"}
+                    {loading ? "Entrando..." : "Ingresar"}
                 </button>
             </form>
 
@@ -113,3 +119,4 @@ function LoginForm({ API_URL, onLoginSuccess }) {
 }
 
 export default LoginForm;
+
